@@ -1,7 +1,7 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import { Sidebar } from "./Sidebar";
 import { cn } from "@/lib/utils";
-import { Menu } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface MainLayoutProps {
@@ -9,25 +9,63 @@ interface MainLayoutProps {
 }
 
 export function MainLayout({ children }: MainLayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+      if (window.innerWidth >= 1024) {
+        setSidebarOpen(true);
+      } else {
+        setSidebarOpen(false);
+      }
+    };
+
+    checkIsMobile();
+    window.addEventListener('resize', checkIsMobile);
+
+    return () => window.removeEventListener('resize', checkIsMobile);
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
-      <Sidebar />
-      
+      {/* Mobile overlay */}
+      {sidebarOpen && isMobile && (
+        <div
+          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <div className={cn(
+        "fixed left-0 top-0 z-40 h-screen transition-transform duration-300 lg:translate-x-0",
+        sidebarOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
+        <Sidebar onClose={() => setSidebarOpen(false)} />
+      </div>
+
       {/* Main content */}
       <main className={cn(
         "transition-all duration-300 min-h-screen",
-        "ml-64" // Default sidebar width
+        "lg:ml-64" // Desktop sidebar width
       )}>
         {/* Mobile header */}
-        <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-card border-b border-border p-4">
-          <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
-            <Menu className="w-5 h-5" />
+        <div className="lg:hidden fixed top-0 left-0 right-0 z-20 bg-card border-b border-border p-4 flex items-center justify-between">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="lg:hidden"
+          >
+            {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </Button>
+          <h1 className="font-display font-bold text-primary text-lg">LA ZULIANITA</h1>
+          <div className="w-10" /> {/* Spacer for centering */}
         </div>
-        
-        <div className="p-6 lg:p-8">
+
+        <div className="p-4 pt-16 lg:p-8 lg:pt-8">
           {children}
         </div>
       </main>

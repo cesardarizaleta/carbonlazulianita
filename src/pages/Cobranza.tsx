@@ -225,16 +225,16 @@ const Cobranza = () => {
             <span className="ml-2 text-muted-foreground">Cargando cobranzas...</span>
           </div>
         ) : (
-          <div className="bg-card rounded-xl border border-border shadow-sm animate-slide-up">
+          <div className="bg-card rounded-xl border border-border shadow-sm animate-slide-up overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Factura</TableHead>
-                  <TableHead>Venta ID</TableHead>
-                  <TableHead>Vencimiento</TableHead>
-                  <TableHead>Monto Pendiente</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
+                  <TableHead className="min-w-[100px]">Factura</TableHead>
+                  <TableHead className="min-w-[100px]">Venta ID</TableHead>
+                  <TableHead className="min-w-[120px]">Vencimiento</TableHead>
+                  <TableHead className="min-w-[130px]">Monto Pendiente</TableHead>
+                  <TableHead className="min-w-[100px]">Estado</TableHead>
+                  <TableHead className="min-w-[120px] text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

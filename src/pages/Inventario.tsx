@@ -89,19 +89,28 @@ const Inventario = () => {
 
   const filteredProducts = products.filter(
     (product) =>
-      product.nombre_producto.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.sku.toLowerCase().includes(searchTerm.toLowerCase())
+      product.nombre_producto.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleAddProduct = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
+
+    // Obtener el usuario actual
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) {
+      setError("Debes iniciar sesión para crear productos");
+      return;
+    }
+
     const productData = {
       nombre_producto: formData.get("nombre") as string,
       descripcion: formData.get("descripcion") as string,
       precio: Number(formData.get("precio")),
       stock: Number(formData.get("stock")),
       categoria: formData.get("categoria") as string,
+      fecha_creacion: new Date().toISOString(),
+      user_id: session.user.id,
     };
 
     try {
@@ -113,7 +122,7 @@ const Inventario = () => {
           setProducts(products.map(p => p.id === editingProduct.id ? { ...p, ...productData } : p));
         }
       } else {
-        const response = await inventarioService.createInventario(productData);
+        const response = await inventarioService.createProducto(productData);
         if (response.error) {
           setError(response.error);
         } else {
@@ -134,7 +143,7 @@ const Inventario = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      const response = await inventarioService.deleteInventario(id);
+      const response = await inventarioService.deleteProducto(id);
       if (response.error) {
         setError(response.error);
       } else {
@@ -242,15 +251,15 @@ const Inventario = () => {
             <p className="text-muted-foreground">Debes iniciar sesión para ver el inventario.</p>
           </div>
         ) : (
-          <div className="bg-card rounded-xl border border-border shadow-sm animate-slide-up">
+          <div className="bg-card rounded-xl border border-border shadow-sm animate-slide-up overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Producto</TableHead>
-                  <TableHead>Categoría</TableHead>
-                  <TableHead>Stock</TableHead>
-                  <TableHead>Precio</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
+                  <TableHead className="min-w-[200px]">Producto</TableHead>
+                  <TableHead className="min-w-[120px]">Categoría</TableHead>
+                  <TableHead className="min-w-[100px]">Stock</TableHead>
+                  <TableHead className="min-w-[100px]">Precio</TableHead>
+                  <TableHead className="min-w-[120px] text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

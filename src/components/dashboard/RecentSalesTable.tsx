@@ -24,7 +24,7 @@ const estadoBadgeVariant = {
 
 export function RecentSalesTable() {
   return (
-    <div className="bg-card rounded-xl border border-border shadow-sm animate-slide-up">
+    <div className="bg-card rounded-xl border border-border shadow-sm animate-slide-up overflow-x-auto">
       <div className="p-6 border-b border-border">
         <h3 className="text-lg font-display font-semibold text-foreground">Ventas Recientes</h3>
         <p className="text-sm text-muted-foreground">Últimas 5 transacciones</p>
@@ -32,12 +32,12 @@ export function RecentSalesTable() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>ID</TableHead>
-            <TableHead>Cliente</TableHead>
-            <TableHead>Producto</TableHead>
-            <TableHead>Cantidad</TableHead>
-            <TableHead>Total</TableHead>
-            <TableHead>Estado</TableHead>
+            <TableHead className="min-w-[80px]">ID</TableHead>
+            <TableHead className="min-w-[120px]">Cliente</TableHead>
+            <TableHead className="min-w-[150px]">Producto</TableHead>
+            <TableHead className="min-w-[80px]">Cantidad</TableHead>
+            <TableHead className="min-w-[100px]">Total</TableHead>
+            <TableHead className="min-w-[100px]">Estado</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

@@ -225,17 +225,17 @@ const Clientes = () => {
             <span className="ml-2 text-muted-foreground">Cargando clientes...</span>
           </div>
         ) : (
-          <div className="bg-card rounded-xl border border-border shadow-sm animate-slide-up">
+          <div className="bg-card rounded-xl border border-border shadow-sm animate-slide-up overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Contacto</TableHead>
-                  <TableHead>Dirección</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Total Compras</TableHead>
-                  <TableHead>Última Compra</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
+                  <TableHead className="min-w-[150px]">Cliente</TableHead>
+                  <TableHead className="min-w-[150px]">Contacto</TableHead>
+                  <TableHead className="min-w-[200px]">Dirección</TableHead>
+                  <TableHead className="min-w-[100px]">Tipo</TableHead>
+                  <TableHead className="min-w-[120px]">Total Compras</TableHead>
+                  <TableHead className="min-w-[120px]">Última Compra</TableHead>
+                  <TableHead className="min-w-[120px] text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

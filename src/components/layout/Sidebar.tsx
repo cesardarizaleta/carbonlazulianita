@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -10,7 +10,8 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
-  User
+  User,
+  X
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
@@ -25,24 +26,57 @@ const menuItems = [
   { icon: Settings, label: "Configuración", path: "/configuracion" },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  onClose?: () => void;
+}
+
+export function Sidebar({ onClose }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
 
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+
+    checkIsMobile();
+    window.addEventListener('resize', checkIsMobile);
+
+    return () => window.removeEventListener('resize', checkIsMobile);
+  }, []);
+
   const handleSignOut = async () => {
     await signOut();
     navigate("/login");
+    if (onClose) onClose();
+  };
+
+  const handleNavClick = () => {
+    if (isMobile && onClose) {
+      onClose();
+    }
   };
 
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 z-40 h-screen bg-sidebar transition-all duration-300 flex flex-col",
-        collapsed ? "w-20" : "w-64"
+        "h-screen bg-sidebar flex flex-col border-r border-sidebar-border",
+        "w-64 lg:w-64" // Fixed width for mobile, collapsible for desktop
       )}
     >
+      {/* Mobile close button */}
+      <div className="lg:hidden flex justify-end p-2">
+        <button
+          onClick={onClose}
+          className="p-2 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+
       {/* Logo */}
       <div className="flex items-center justify-center p-4 border-b border-sidebar-border">
         <img
@@ -50,10 +84,10 @@ export function Sidebar() {
           alt="La Zulianita"
           className={cn(
             "transition-all duration-300 rounded-lg",
-            collapsed ? "w-12 h-12" : "w-20 h-20"
+            collapsed && !isMobile ? "w-12 h-12" : "w-16 h-16 lg:w-20 lg:h-20"
           )}
         />
-        {!collapsed && (
+        {(!collapsed || isMobile) && (
           <div className="ml-3">
             <h1 className="font-display font-bold text-sidebar-primary text-lg leading-tight">
               LA ZULIANITA
@@ -64,7 +98,7 @@ export function Sidebar() {
       </div>
 
       {/* User Info */}
-      {user && !collapsed && (
+      {user && (!collapsed || isMobile) && (
         <div className="px-4 py-3 border-b border-sidebar-border">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-sidebar-primary rounded-full flex items-center justify-center">
@@ -90,6 +124,7 @@ export function Sidebar() {
             <NavLink
               key={item.path}
               to={item.path}
+              onClick={handleNavClick}
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group",
                 isActive
@@ -98,7 +133,7 @@ export function Sidebar() {
               )}
             >
               <item.icon className={cn("w-5 h-5 flex-shrink-0", isActive && "animate-pulse")} />
-              {!collapsed && (
+              {(!collapsed || isMobile) && (
                 <span className="font-medium truncate">{item.label}</span>
               )}
             </NavLink>
@@ -108,26 +143,28 @@ export function Sidebar() {
 
       {/* Footer */}
       <div className="p-3 border-t border-sidebar-border">
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="flex items-center justify-center w-full gap-2 px-4 py-2 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors mb-2"
-        >
-          {collapsed ? (
-            <ChevronRight className="w-5 h-5" />
-          ) : (
-            <>
-              <ChevronLeft className="w-5 h-5" />
-              <span className="text-sm">Colapsar</span>
-            </>
-          )}
-        </button>
+        {!isMobile && (
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className="flex items-center justify-center w-full gap-2 px-4 py-2 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors mb-2"
+          >
+            {collapsed ? (
+              <ChevronRight className="w-5 h-5" />
+            ) : (
+              <>
+                <ChevronLeft className="w-5 h-5" />
+                <span className="text-sm">Colapsar</span>
+              </>
+            )}
+          </button>
+        )}
 
         <button
           onClick={handleSignOut}
           className="flex items-center gap-3 px-4 py-2 w-full rounded-lg text-sidebar-foreground hover:bg-destructive hover:text-destructive-foreground transition-colors"
         >
           <LogOut className="w-5 h-5" />
-          {!collapsed && <span className="text-sm">Cerrar Sesión</span>}
+          {(!collapsed || isMobile) && <span className="text-sm">Cerrar Sesión</span>}
         </button>
       </div>
     </aside>
