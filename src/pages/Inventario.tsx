@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,66 +19,112 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Plus, Search, Edit, Trash2, Package } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Package, Loader2 } from "lucide-react";
+import { inventarioService } from "@/services";
+import { supabase } from "@/integrations/supabase/client";
+import type { Producto } from "@/services";
 
-interface Product {
-  id: string;
-  nombre: string;
-  sku: string;
-  categoria: string;
-  stock: number;
-  stockMinimo: number;
-  precio: number;
-  unidad: string;
-}
-
-const initialProducts: Product[] = [
-  { id: "1", nombre: "Carbón Vegetal Premium", sku: "CVP-001", categoria: "Carbón Vegetal", stock: 2500, stockMinimo: 500, precio: 2.50, unidad: "kg" },
-  { id: "2", nombre: "Carbón Mineral", sku: "CM-001", categoria: "Carbón Mineral", stock: 1800, stockMinimo: 400, precio: 2.40, unidad: "kg" },
-  { id: "3", nombre: "Briquetas de Carbón", sku: "BC-001", categoria: "Briquetas", stock: 800, stockMinimo: 300, precio: 2.40, unidad: "kg" },
-  { id: "4", nombre: "Carbón para Parrilla", sku: "CP-001", categoria: "Carbón Vegetal", stock: 1200, stockMinimo: 250, precio: 2.20, unidad: "kg" },
-  { id: "5", nombre: "Carbón Activado", sku: "CA-001", categoria: "Especial", stock: 150, stockMinimo: 50, precio: 8.50, unidad: "kg" },
-];
+type Product = Producto;
 
 const Inventario = () => {
-  const [products, setProducts] = useState<Product[]>(initialProducts);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    checkAuthAndLoadProducts();
+  }, []);
+
+  const checkAuthAndLoadProducts = async () => {
+    try {
+      // Verificar si el usuario está autenticado
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        setIsAuthenticated(false);
+        setLoading(false);
+        setError("Debes iniciar sesión para acceder al inventario");
+        return;
+      }
+
+      setIsAuthenticated(true);
+      await loadProducts();
+    } catch (err) {
+      console.error('Auth check error:', err);
+      setIsAuthenticated(false);
+      setError("Error al verificar autenticación");
+      setLoading(false);
+    }
+  };
+
+  const loadProducts = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Cargar productos usando el servicio mock
+      const response = await inventarioService.getProductos(1, 100);
+      if (response.error) {
+        // Si es un error de "no hay productos", no mostrar como error
+        if (response.error.includes('No data') || response.error.includes('empty') || response.data?.length === 0) {
+          setProducts([]);
+        } else {
+          console.error('Service error:', response.error);
+          setError(response.error);
+        }
+      } else {
+        setProducts(response.data || []);
+      }
+    } catch (err) {
+      console.error('Unexpected error:', err);
+      setError("Error al conectar con la base de datos");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredProducts = products.filter(
     (product) =>
-      product.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.nombre_producto.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.sku.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getStockStatus = (stock: number, minimo: number) => {
-    if (stock <= minimo * 0.5) return { label: "Crítico", variant: "destructive" as const };
-    if (stock <= minimo) return { label: "Bajo", variant: "secondary" as const };
-    return { label: "Normal", variant: "default" as const };
-  };
-
-  const handleAddProduct = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleAddProduct = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const newProduct: Product = {
-      id: Date.now().toString(),
-      nombre: formData.get("nombre") as string,
-      sku: formData.get("sku") as string,
-      categoria: formData.get("categoria") as string,
-      stock: Number(formData.get("stock")),
-      stockMinimo: Number(formData.get("stockMinimo")),
+    const productData = {
+      nombre_producto: formData.get("nombre") as string,
+      descripcion: formData.get("descripcion") as string,
       precio: Number(formData.get("precio")),
-      unidad: formData.get("unidad") as string,
+      stock: Number(formData.get("stock")),
+      categoria: formData.get("categoria") as string,
     };
-    
-    if (editingProduct) {
-      setProducts(products.map(p => p.id === editingProduct.id ? { ...newProduct, id: editingProduct.id } : p));
-    } else {
-      setProducts([...products, newProduct]);
+
+    try {
+      if (editingProduct) {
+        const response = await inventarioService.updateProducto(editingProduct.id, productData);
+        if (response.error) {
+          setError(response.error);
+        } else {
+          setProducts(products.map(p => p.id === editingProduct.id ? { ...p, ...productData } : p));
+        }
+      } else {
+        const response = await inventarioService.createInventario(productData);
+        if (response.error) {
+          setError(response.error);
+        } else {
+          setProducts([...products, response.data!]);
+        }
+      }
+      setIsDialogOpen(false);
+      setEditingProduct(null);
+    } catch (err) {
+      setError("Error al guardar producto");
     }
-    setIsDialogOpen(false);
-    setEditingProduct(null);
   };
 
   const handleEdit = (product: Product) => {
@@ -86,8 +132,17 @@ const Inventario = () => {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    setProducts(products.filter(p => p.id !== id));
+  const handleDelete = async (id: string) => {
+    try {
+      const response = await inventarioService.deleteInventario(id);
+      if (response.error) {
+        setError(response.error);
+      } else {
+        setProducts(products.filter(p => p.id !== id));
+      }
+    } catch (err) {
+      setError("Error al eliminar producto");
+    }
   };
 
   return (
@@ -115,32 +170,24 @@ const Inventario = () => {
               <form onSubmit={handleAddProduct} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="nombre">Nombre</Label>
-                    <Input id="nombre" name="nombre" defaultValue={editingProduct?.nombre} required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="sku">SKU</Label>
-                    <Input id="sku" name="sku" defaultValue={editingProduct?.sku} required />
+                    <Label htmlFor="nombre">Nombre del Producto</Label>
+                    <Input id="nombre" name="nombre" defaultValue={editingProduct?.nombre_producto} required />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="categoria">Categoría</Label>
-                    <Input id="categoria" name="categoria" defaultValue={editingProduct?.categoria} required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="unidad">Unidad</Label>
-                    <Input id="unidad" name="unidad" defaultValue={editingProduct?.unidad || "kg"} required />
+                    <Input id="categoria" name="categoria" defaultValue={editingProduct?.categoria} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="stock">Stock Actual</Label>
                     <Input id="stock" name="stock" type="number" defaultValue={editingProduct?.stock} required />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="stockMinimo">Stock Mínimo</Label>
-                    <Input id="stockMinimo" name="stockMinimo" type="number" defaultValue={editingProduct?.stockMinimo} required />
+                    <Label htmlFor="precio">Precio ($)</Label>
+                    <Input id="precio" name="precio" type="number" step="0.01" defaultValue={editingProduct?.precio} required />
                   </div>
                   <div className="col-span-2 space-y-2">
-                    <Label htmlFor="precio">Precio por Unidad ($)</Label>
-                    <Input id="precio" name="precio" type="number" step="0.01" defaultValue={editingProduct?.precio} required />
+                    <Label htmlFor="descripcion">Descripción</Label>
+                    <Input id="descripcion" name="descripcion" defaultValue={editingProduct?.descripcion} />
                   </div>
                 </div>
                 <Button type="submit" className="w-full">
@@ -170,49 +217,84 @@ const Inventario = () => {
           </div>
         </div>
 
-        {/* Table */}
-        <div className="bg-card rounded-xl border border-border shadow-sm animate-slide-up">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Producto</TableHead>
-                <TableHead>SKU</TableHead>
-                <TableHead>Categoría</TableHead>
-                <TableHead>Stock</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Precio</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredProducts.map((product) => {
-                const status = getStockStatus(product.stock, product.stockMinimo);
-                return (
-                  <TableRow key={product.id} className="hover:bg-muted/50 transition-colors">
-                    <TableCell className="font-medium">{product.nombre}</TableCell>
-                    <TableCell className="font-mono text-sm">{product.sku}</TableCell>
-                    <TableCell>{product.categoria}</TableCell>
-                    <TableCell>{product.stock.toLocaleString()} {product.unidad}</TableCell>
-                    <TableCell>
-                      <Badge variant={status.variant}>{status.label}</Badge>
-                    </TableCell>
-                    <TableCell>${product.precio.toFixed(2)}/{product.unidad}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon" onClick={() => handleEdit(product)}>
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(product.id)}>
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
-                      </div>
+        {/* Error Message */}
+        {error && (
+          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 mb-6">
+            <p className="text-destructive text-sm">{error}</p>
+            {error.includes("autenticación") || error.includes("sesión") ? (
+              <p className="text-sm text-muted-foreground mt-2">
+                Ve a la página de <a href="/login" className="text-primary hover:underline">inicio de sesión</a> para acceder.
+              </p>
+            ) : null}
+          </div>
+        )}
+
+        {/* Loading or Table */}
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+            <span className="ml-2 text-muted-foreground">Cargando productos...</span>
+          </div>
+        ) : !isAuthenticated ? (
+          <div className="text-center py-12">
+            <Package className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-muted-foreground mb-2">Acceso requerido</h3>
+            <p className="text-muted-foreground">Debes iniciar sesión para ver el inventario.</p>
+          </div>
+        ) : (
+          <div className="bg-card rounded-xl border border-border shadow-sm animate-slide-up">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Producto</TableHead>
+                  <TableHead>Categoría</TableHead>
+                  <TableHead>Stock</TableHead>
+                  <TableHead>Precio</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredProducts.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-12 text-muted-foreground">
+                      {loading ? (
+                        <div className="flex items-center justify-center">
+                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                          Cargando productos...
+                        </div>
+                      ) : error ? (
+                        <div className="text-destructive">
+                          {error}
+                        </div>
+                      ) : (
+                        "No hay productos registrados. ¡Agrega el primero!"
+                      )}
                     </TableCell>
                   </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
+                ) : (
+                  filteredProducts.map((product) => (
+                    <TableRow key={product.id} className="hover:bg-muted/50 transition-colors">
+                      <TableCell className="font-medium">{product.nombre_producto}</TableCell>
+                      <TableCell>{product.categoria || 'Sin categoría'}</TableCell>
+                      <TableCell>{product.stock.toLocaleString()}</TableCell>
+                      <TableCell>${product.precio.toFixed(2)}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button variant="ghost" size="icon" onClick={() => handleEdit(product)}>
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleDelete(product.id)}>
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </div>
     </MainLayout>
   );

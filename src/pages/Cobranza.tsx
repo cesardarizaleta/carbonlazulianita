@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,26 +26,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search, CheckCircle, AlertCircle, Clock, DollarSign } from "lucide-react";
+import { Plus, Search, CheckCircle, AlertCircle, Clock, DollarSign, Loader2 } from "lucide-react";
+import { cobranzaService } from "@/services";
+import type { Cobranza } from "@/services";
 
-interface Invoice {
-  id: string;
-  fecha: string;
-  vencimiento: string;
-  cliente: string;
-  monto: number;
-  pagado: number;
-  estado: "pagado" | "pendiente" | "vencido" | "parcial";
+interface Invoice extends Cobranza {
+  cliente: string; // Nombre del cliente
+  venta_id: string;
+  monto_pendiente: number;
+  fecha_vencimiento?: string;
+  estado: string;
+  notas?: string;
+  user_id: string;
 }
-
-const initialInvoices: Invoice[] = [
-  { id: "FAC-001", fecha: "2024-01-01", vencimiento: "2024-01-31", cliente: "Distribuidora Norte", monto: 2500.00, pagado: 2500.00, estado: "pagado" },
-  { id: "FAC-002", fecha: "2024-01-05", vencimiento: "2024-02-05", cliente: "Asadero El Paisa", monto: 1800.00, pagado: 900.00, estado: "parcial" },
-  { id: "FAC-003", fecha: "2024-01-10", vencimiento: "2024-02-10", cliente: "Restaurant La Casa", monto: 950.00, pagado: 0, estado: "pendiente" },
-  { id: "FAC-004", fecha: "2023-12-15", vencimiento: "2024-01-15", cliente: "Hotel Central", monto: 3200.00, pagado: 0, estado: "vencido" },
-  { id: "FAC-005", fecha: "2024-01-12", vencimiento: "2024-02-12", cliente: "Carnicería Don Pedro", monto: 680.00, pagado: 680.00, estado: "pagado" },
-  { id: "FAC-006", fecha: "2023-12-20", vencimiento: "2024-01-20", cliente: "Parrilla Los Amigos", monto: 1450.00, pagado: 500.00, estado: "vencido" },
-];
 
 const estadoBadgeVariant = {
   pagado: "default",
@@ -62,11 +55,45 @@ const estadoIcon = {
 };
 
 const Cobranza = () => {
-  const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterEstado, setFilterEstado] = useState<string>("todos");
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+
+  useEffect(() => {
+    loadInvoices();
+  }, []);
+
+  const loadInvoices = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await cobranzaService.getCobranzas();
+      if (response.error) {
+        setError(response.error);
+      } else {
+        // Agregar nombre del cliente a cada factura (mock)
+        const invoicesWithClient = (response.data || []).map(cobranza => ({
+          ...cobranza,
+          cliente: `Cliente ${cobranza.venta_id}`, // Mock client name
+          venta_id: cobranza.venta_id,
+          monto_pendiente: cobranza.monto_pendiente,
+          fecha_vencimiento: cobranza.fecha_vencimiento,
+          estado: cobranza.estado,
+          notas: cobranza.notas,
+          user_id: cobranza.user_id
+        }));
+        setInvoices(invoicesWithClient);
+      }
+    } catch (err) {
+      setError("Error al cargar cobranzas");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredInvoices = invoices.filter((invoice) => {
     const matchesSearch = 
@@ -78,30 +105,34 @@ const Cobranza = () => {
 
   const totalPendiente = invoices
     .filter(inv => inv.estado !== "pagado")
-    .reduce((acc, inv) => acc + (inv.monto - inv.pagado), 0);
+    .reduce((acc, inv) => acc + (inv.monto_pendiente), 0);
 
   const totalVencido = invoices
     .filter(inv => inv.estado === "vencido")
-    .reduce((acc, inv) => acc + (inv.monto - inv.pagado), 0);
+    .reduce((acc, inv) => acc + (inv.monto_pendiente), 0);
 
-  const handlePayment = (e: React.FormEvent<HTMLFormElement>) => {
+  const handlePayment = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!selectedInvoice) return;
-    
+
     const formData = new FormData(e.currentTarget);
     const montoPago = Number(formData.get("monto"));
-    
-    setInvoices(invoices.map(inv => {
-      if (inv.id === selectedInvoice.id) {
-        const nuevoPagado = inv.pagado + montoPago;
-        const nuevoEstado = nuevoPagado >= inv.monto ? "pagado" : "parcial";
-        return { ...inv, pagado: nuevoPagado, estado: nuevoEstado };
-      }
-      return inv;
-    }));
-    
-    setIsPaymentDialogOpen(false);
-    setSelectedInvoice(null);
+
+    try {
+      // For now, just update the local state. In a real app, you'd call an update service
+      setInvoices(invoices.map(inv => {
+        if (inv.id === selectedInvoice.id) {
+          const nuevoMontoPendiente = Math.max(0, inv.monto_pendiente - montoPago);
+          const nuevoEstado = nuevoMontoPendiente === 0 ? "pagado" : nuevoMontoPendiente < inv.monto_pendiente ? "parcial" : inv.estado;
+          return { ...inv, monto_pendiente: nuevoMontoPendiente, estado: nuevoEstado };
+        }
+        return inv;
+      }));
+      setIsPaymentDialogOpen(false);
+      setSelectedInvoice(null);
+    } catch (err) {
+      setError("Error al procesar pago");
+    }
   };
 
   const openPaymentDialog = (invoice: Invoice) => {
@@ -180,60 +211,73 @@ const Cobranza = () => {
           </Select>
         </div>
 
-        {/* Table */}
-        <div className="bg-card rounded-xl border border-border shadow-sm animate-slide-up">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Factura</TableHead>
-                <TableHead>Fecha</TableHead>
-                <TableHead>Vencimiento</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Monto</TableHead>
-                <TableHead>Pagado</TableHead>
-                <TableHead>Saldo</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredInvoices.map((invoice) => {
-                const Icon = estadoIcon[invoice.estado];
-                const saldo = invoice.monto - invoice.pagado;
-                return (
-                  <TableRow key={invoice.id} className="hover:bg-muted/50 transition-colors">
-                    <TableCell className="font-mono text-sm">{invoice.id}</TableCell>
-                    <TableCell>{invoice.fecha}</TableCell>
-                    <TableCell>{invoice.vencimiento}</TableCell>
-                    <TableCell className="font-medium">{invoice.cliente}</TableCell>
-                    <TableCell>${invoice.monto.toFixed(2)}</TableCell>
-                    <TableCell className="text-success">${invoice.pagado.toFixed(2)}</TableCell>
-                    <TableCell className={saldo > 0 ? "text-destructive font-semibold" : ""}>
-                      ${saldo.toFixed(2)}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={estadoBadgeVariant[invoice.estado]} className="gap-1">
-                        <Icon className="w-3 h-3" />
-                        {invoice.estado}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {invoice.estado !== "pagado" && (
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => openPaymentDialog(invoice)}
-                        >
-                          Registrar Pago
-                        </Button>
-                      )}
+        {/* Error Message */}
+        {error && (
+          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+            <p className="text-destructive text-sm">{error}</p>
+          </div>
+        )}
+
+        {/* Loading or Table */}
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+            <span className="ml-2 text-muted-foreground">Cargando cobranzas...</span>
+          </div>
+        ) : (
+          <div className="bg-card rounded-xl border border-border shadow-sm animate-slide-up">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Factura</TableHead>
+                  <TableHead>Venta ID</TableHead>
+                  <TableHead>Vencimiento</TableHead>
+                  <TableHead>Monto Pendiente</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredInvoices.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
+                      No se encontraron cobranzas
                     </TableCell>
                   </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
+                ) : (
+                  filteredInvoices.map((invoice) => {
+                    const Icon = estadoIcon[invoice.estado] || Clock;
+                    return (
+                      <TableRow key={invoice.id} className="hover:bg-muted/50 transition-colors">
+                        <TableCell className="font-mono text-sm">{invoice.id}</TableCell>
+                        <TableCell className="font-mono text-sm">{invoice.venta_id}</TableCell>
+                        <TableCell>{invoice.fecha_vencimiento ? new Date(invoice.fecha_vencimiento).toLocaleDateString() : "N/A"}</TableCell>
+                        <TableCell className="font-semibold">${invoice.monto_pendiente.toFixed(2)}</TableCell>
+                        <TableCell>
+                          <Badge variant={estadoBadgeVariant[invoice.estado] || "secondary"} className="gap-1">
+                            <Icon className="w-3 h-3" />
+                            {invoice.estado}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {invoice.estado !== "pagado" && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openPaymentDialog(invoice)}
+                            >
+                              Registrar Pago
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        )}
 
         {/* Payment Dialog */}
         <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
@@ -246,7 +290,7 @@ const Cobranza = () => {
                 <div className="bg-muted/50 rounded-lg p-4 space-y-2">
                   <p className="text-sm"><span className="text-muted-foreground">Factura:</span> {selectedInvoice.id}</p>
                   <p className="text-sm"><span className="text-muted-foreground">Cliente:</span> {selectedInvoice.cliente}</p>
-                  <p className="text-sm"><span className="text-muted-foreground">Saldo pendiente:</span> <span className="font-semibold">${(selectedInvoice.monto - selectedInvoice.pagado).toFixed(2)}</span></p>
+                  <p className="text-sm"><span className="text-muted-foreground">Saldo pendiente:</span> <span className="font-semibold">${selectedInvoice.monto_pendiente.toFixed(2)}</span></p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="monto">Monto a Pagar ($)</Label>
@@ -255,7 +299,7 @@ const Cobranza = () => {
                     name="monto" 
                     type="number" 
                     step="0.01" 
-                    max={selectedInvoice.monto - selectedInvoice.pagado}
+                    max={selectedInvoice.monto_pendiente}
                     required 
                   />
                 </div>

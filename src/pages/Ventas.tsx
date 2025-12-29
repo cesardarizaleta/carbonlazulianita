@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,27 +26,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search, Eye, ShoppingCart } from "lucide-react";
+import { Plus, Search, Eye, ShoppingCart, Loader2 } from "lucide-react";
+import { ventaService } from "@/services";
+import type { Venta } from "@/services";
 
-interface Sale {
-  id: string;
-  fecha: string;
-  cliente: string;
-  productos: string;
-  cantidad: string;
-  total: number;
-  estado: "pendiente" | "procesando" | "enviado" | "completado" | "cancelado";
-  metodoPago: string;
+interface Sale extends Venta {
+  cliente_nombre?: string;
 }
-
-const initialSales: Sale[] = [
-  { id: "VTA-001", fecha: "2024-01-15", cliente: "Distribuidora Norte", productos: "Carbón Vegetal Premium", cantidad: "500 kg", total: 1250.00, estado: "completado", metodoPago: "Transferencia" },
-  { id: "VTA-002", fecha: "2024-01-15", cliente: "Asadero El Paisa", productos: "Carbón Mineral", cantidad: "200 kg", total: 480.00, estado: "pendiente", metodoPago: "Crédito" },
-  { id: "VTA-003", fecha: "2024-01-14", cliente: "Restaurant La Casa", productos: "Carbón Vegetal Premium", cantidad: "150 kg", total: 375.00, estado: "completado", metodoPago: "Efectivo" },
-  { id: "VTA-004", fecha: "2024-01-14", cliente: "Hotel Central", productos: "Briquetas de Carbón", cantidad: "300 kg", total: 720.00, estado: "enviado", metodoPago: "Transferencia" },
-  { id: "VTA-005", fecha: "2024-01-13", cliente: "Carnicería Don Pedro", productos: "Carbón Vegetal", cantidad: "100 kg", total: 220.00, estado: "completado", metodoPago: "Efectivo" },
-  { id: "VTA-006", fecha: "2024-01-13", cliente: "Parrilla Los Amigos", productos: "Carbón para Parrilla", cantidad: "250 kg", total: 550.00, estado: "procesando", metodoPago: "Crédito" },
-];
 
 const estadoBadgeVariant = {
   completado: "default",
@@ -57,14 +43,37 @@ const estadoBadgeVariant = {
 } as const;
 
 const Ventas = () => {
-  const [sales, setSales] = useState<Sale[]>(initialSales);
+  const [sales, setSales] = useState<Sale[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterEstado, setFilterEstado] = useState<string>("todos");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
+  useEffect(() => {
+    loadSales();
+  }, []);
+
+  const loadSales = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await ventaService.getVentas();
+      if (response.error) {
+        setError(response.error);
+      } else {
+        setSales(response.data || []);
+      }
+    } catch (err) {
+      setError("Error al cargar ventas");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredSales = sales.filter((sale) => {
-    const matchesSearch = 
-      sale.cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch =
+      (sale.cliente?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
       sale.id.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterEstado === "todos" || sale.estado === filterEstado;
     return matchesSearch && matchesFilter;
@@ -72,21 +81,27 @@ const Ventas = () => {
 
   const totalVentas = filteredSales.reduce((acc, sale) => acc + sale.total, 0);
 
-  const handleAddSale = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleAddSale = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const newSale: Sale = {
-      id: `VTA-${String(sales.length + 1).padStart(3, '0')}`,
-      fecha: new Date().toISOString().split('T')[0],
-      cliente: formData.get("cliente") as string,
-      productos: formData.get("productos") as string,
-      cantidad: formData.get("cantidad") as string,
+    const saleData = {
+      cliente_id: formData.get("cliente") as string,
       total: Number(formData.get("total")),
       estado: "pendiente",
-      metodoPago: formData.get("metodoPago") as string,
     };
-    setSales([newSale, ...sales]);
-    setIsDialogOpen(false);
+
+    try {
+      // For now, create a simple sale without items
+      const response = await ventaService.createVenta(saleData, []);
+      if (response.error) {
+        setError(response.error);
+      } else {
+        setSales([response.data!, ...sales]);
+        setIsDialogOpen(false);
+      }
+    } catch (err) {
+      setError("Error al crear venta");
+    }
   };
 
   return (
@@ -111,36 +126,12 @@ const Ventas = () => {
               </DialogHeader>
               <form onSubmit={handleAddSale} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="cliente">Cliente</Label>
-                  <Input id="cliente" name="cliente" placeholder="Nombre del cliente" required />
+                  <Label htmlFor="cliente">Cliente ID</Label>
+                  <Input id="cliente" name="cliente" placeholder="ID del cliente" required />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="productos">Productos</Label>
-                  <Input id="productos" name="productos" placeholder="Descripción de productos" required />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="cantidad">Cantidad</Label>
-                    <Input id="cantidad" name="cantidad" placeholder="Ej: 100 kg" required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="total">Total ($)</Label>
-                    <Input id="total" name="total" type="number" step="0.01" required />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="metodoPago">Método de Pago</Label>
-                  <Select name="metodoPago" defaultValue="Efectivo">
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Efectivo">Efectivo</SelectItem>
-                      <SelectItem value="Transferencia">Transferencia</SelectItem>
-                      <SelectItem value="Crédito">Crédito</SelectItem>
-                      <SelectItem value="Tarjeta">Tarjeta</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="total">Total ($)</Label>
+                  <Input id="total" name="total" type="number" step="0.01" required />
                 </div>
                 <Button type="submit" className="w-full">Registrar Venta</Button>
               </form>
@@ -178,45 +169,61 @@ const Ventas = () => {
           </Badge>
         </div>
 
-        {/* Table */}
-        <div className="bg-card rounded-xl border border-border shadow-sm animate-slide-up">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>Fecha</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Productos</TableHead>
-                <TableHead>Cantidad</TableHead>
-                <TableHead>Total</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Pago</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredSales.map((sale) => (
-                <TableRow key={sale.id} className="hover:bg-muted/50 transition-colors">
-                  <TableCell className="font-mono text-sm">{sale.id}</TableCell>
-                  <TableCell>{sale.fecha}</TableCell>
-                  <TableCell className="font-medium">{sale.cliente}</TableCell>
-                  <TableCell>{sale.productos}</TableCell>
-                  <TableCell>{sale.cantidad}</TableCell>
-                  <TableCell className="font-semibold">${sale.total.toFixed(2)}</TableCell>
-                  <TableCell>
-                    <Badge variant={estadoBadgeVariant[sale.estado]}>{sale.estado}</Badge>
-                  </TableCell>
-                  <TableCell>{sale.metodoPago}</TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon">
-                      <Eye className="w-4 h-4" />
-                    </Button>
-                  </TableCell>
+        {/* Error Message */}
+        {error && (
+          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+            <p className="text-destructive text-sm">{error}</p>
+          </div>
+        )}
+
+        {/* Loading or Table */}
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+            <span className="ml-2 text-muted-foreground">Cargando ventas...</span>
+          </div>
+        ) : (
+          <div className="bg-card rounded-xl border border-border shadow-sm animate-slide-up">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>ID</TableHead>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Total</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {filteredSales.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
+                      No se encontraron ventas
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredSales.map((sale) => (
+                    <TableRow key={sale.id} className="hover:bg-muted/50 transition-colors">
+                      <TableCell className="font-mono text-sm">{sale.id}</TableCell>
+                      <TableCell>{new Date(sale.fecha_venta).toLocaleDateString()}</TableCell>
+                      <TableCell className="font-medium">{sale.cliente_nombre || sale.cliente_id || "N/A"}</TableCell>
+                      <TableCell className="font-semibold">${sale.total.toFixed(2)}</TableCell>
+                      <TableCell>
+                        <Badge variant={estadoBadgeVariant[sale.estado] || "secondary"}>{sale.estado}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="icon">
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </div>
     </MainLayout>
   );

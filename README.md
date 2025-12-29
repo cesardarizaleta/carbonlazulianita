@@ -1,73 +1,185 @@
-# Welcome to your Lovable project
+# Carbon Zulianita ERP
 
-## Project info
+![Inventario](public/inventory.png)
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+Una suite completa de gestión empresarial diseñada para pequeñas y medianas empresas. Gestiona inventarios, ventas, clientes y cobranzas de manera eficiente y moderna.
 
-## How can I edit this code?
+## 🚀 Características
 
-There are several ways of editing your application.
+- **Gestión de Inventario**: Controla productos, stock, categorías y alertas de stock bajo.
+- **Ventas**: Registra ventas con detalles de productos, calcula totales automáticamente.
+- **Clientes**: Mantén un registro completo de clientes con información de contacto.
+- **Cobranza**: Gestiona pagos pendientes, fechas de vencimiento y estados de cobranza.
+- **Dashboard**: Visualiza estadísticas clave con gráficos y reportes en tiempo real.
+- **Autenticación**: Sistema seguro de login/registro con roles (admin, vendedor, cobrador).
+- **Interfaz Moderna**: UI responsiva y amigable con Tailwind CSS y shadcn-ui.
 
-**Use Lovable**
+## 🛠 Tecnologías Utilizadas
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+- **Frontend**: React 18, TypeScript, Vite
+- **Backend**: Supabase (PostgreSQL, Auth, Storage)
+- **UI/UX**: Tailwind CSS, shadcn-ui, Lucide Icons
+- **Estado y API**: Servicios desacoplados para fácil migración
+- **Despliegue**: Compatible con Vercel, Netlify, o cualquier plataforma que soporte Vite
 
-Changes made via Lovable will be committed automatically to this repo.
+## 📦 Instalación
 
-**Use your preferred IDE**
+### Prerrequisitos
+- Node.js 18+ y npm
+- Cuenta en [Supabase](https://supabase.com)
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Pasos de Instalación
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+1. **Clona el repositorio**:
+   ```bash
+   git clone <URL_DEL_REPOSITORIO>
+   cd carbon-zulianita-suite
+   ```
 
-Follow these steps:
+2. **Instala dependencias**:
+   ```bash
+   npm install
+   ```
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+3. **Configura variables de entorno**:
+   Crea un archivo `.env` en la raíz del proyecto con:
+   ```env
+   VITE_SUPABASE_PROJECT_ID=tu_project_id
+   VITE_SUPABASE_PUBLISHABLE_KEY=tu_clave_anonima
+   VITE_SUPABASE_URL=https://tu-project-id.supabase.co
+   VITE_DATABASE_URL=postgresql://postgres:tu_password@db.tu-project-id.supabase.co:5432/postgres
+   ```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+4. **Configura Supabase**:
+   - Crea un proyecto en Supabase.
+   - Ejecuta el SQL para crear tablas (ver sección Configuración).
+   - Obtén la clave anónima del dashboard de Supabase.
 
-# Step 3: Install the necessary dependencies.
-npm i
+5. **Ejecuta el proyecto**:
+   ```bash
+   npm run dev
+   ```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+   Abre [http://localhost:5173](http://localhost:5173) en tu navegador.
+
+## ⚙️ Configuración de Supabase
+
+### Crear Tablas
+Ejecuta este SQL en el **SQL Editor** de Supabase:
+
+```sql
+-- Tabla para clientes
+CREATE TABLE clientes (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE,
+    telefono VARCHAR(20),
+    direccion TEXT,
+    fecha_creacion TIMESTAMP DEFAULT NOW(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE
+);
+
+-- Tabla para inventario (productos)
+CREATE TABLE inventario (
+    id SERIAL PRIMARY KEY,
+    nombre_producto VARCHAR(255) NOT NULL,
+    descripcion TEXT,
+    precio DECIMAL(10, 2) NOT NULL,
+    stock INTEGER NOT NULL DEFAULT 0,
+    categoria VARCHAR(100),
+    fecha_creacion TIMESTAMP DEFAULT NOW(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE
+);
+
+-- Tabla para ventas
+CREATE TABLE ventas (
+    id SERIAL PRIMARY KEY,
+    cliente_id INTEGER REFERENCES clientes(id) ON DELETE SET NULL,
+    fecha_venta TIMESTAMP DEFAULT NOW(),
+    total DECIMAL(10, 2) NOT NULL,
+    estado VARCHAR(50) DEFAULT 'completada',
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE
+);
+
+-- Tabla para items de venta
+CREATE TABLE venta_items (
+    id SERIAL PRIMARY KEY,
+    venta_id INTEGER REFERENCES ventas(id) ON DELETE CASCADE,
+    producto_id INTEGER REFERENCES inventario(id) ON DELETE SET NULL,
+    cantidad INTEGER NOT NULL,
+    precio_unitario DECIMAL(10, 2) NOT NULL,
+    subtotal DECIMAL(10, 2) NOT NULL
+);
+
+-- Tabla para cobranza
+CREATE TABLE cobranza (
+    id SERIAL PRIMARY KEY,
+    venta_id INTEGER REFERENCES ventas(id) ON DELETE CASCADE,
+    monto_pendiente DECIMAL(10, 2) NOT NULL,
+    fecha_vencimiento DATE,
+    estado VARCHAR(50) DEFAULT 'pendiente',
+    notas TEXT,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE
+);
+
+-- Índices para rendimiento
+CREATE INDEX idx_clientes_user_id ON clientes(user_id);
+CREATE INDEX idx_inventario_user_id ON inventario(user_id);
+CREATE INDEX idx_ventas_user_id ON ventas(user_id);
+CREATE INDEX idx_ventas_cliente_id ON ventas(cliente_id);
+CREATE INDEX idx_venta_items_venta_id ON venta_items(venta_id);
+CREATE INDEX idx_cobranza_venta_id ON cobranza(venta_id);
+CREATE INDEX idx_cobranza_user_id ON cobranza(user_id);
 ```
 
-**Edit a file directly in GitHub**
+### Configurar Seguridad
+- Ve a **Authentication > Policies** en Supabase.
+- Crea políticas RLS para cada tabla, permitiendo acceso solo a registros del usuario autenticado (ej. `user_id = auth.uid()`).
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Generar Tipos
+- Una vez creadas las tablas, ve a **Settings > API > Generate types** para actualizar los tipos TypeScript.
 
-**Use GitHub Codespaces**
+## 📖 Uso
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Navegación
+- **Dashboard**: Vista general con estadísticas.
+- **Inventario**: Agrega/edita productos.
+- **Ventas**: Registra nuevas ventas.
+- **Clientes**: Gestiona base de clientes.
+- **Cobranza**: Monitorea pagos pendientes.
+- **Configuración**: Ajustes del sistema.
 
-## What technologies are used for this project?
+### API Services
+Los servicios están desacoplados para fácil migración:
+- `clienteService`: CRUD de clientes.
+- `inventarioService`: Gestión de productos.
+- `ventaService`: Operaciones de ventas.
+- `cobranzaService`: Manejo de cobranzas.
+- `authService`: Autenticación.
 
-This project is built with:
+Ejemplo de uso:
+```typescript
+import { clienteService } from '@/services';
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+const clientes = await clienteService.getClientes();
+```
 
-## How can I deploy this project?
+## 🤝 Contribución
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+1. Fork el proyecto.
+2. Crea una rama para tu feature (`git checkout -b feature/nueva-funcionalidad`).
+3. Commit tus cambios (`git commit -m 'Agrega nueva funcionalidad'`).
+4. Push a la rama (`git push origin feature/nueva-funcionalidad`).
+5. Abre un Pull Request.
 
-## Can I connect a custom domain to my Lovable project?
+## 📄 Licencia
 
-Yes, you can!
+Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## 📞 Contacto
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Para preguntas o soporte, contacta al equipo de desarrollo.
+
+---
+
+¡Gracias por usar Carbon Zulianita Suite! 🚀
