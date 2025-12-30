@@ -3,6 +3,7 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { SimplePagination } from "@/components/SimplePagination";
 import {
   Table,
   TableBody,
@@ -62,16 +63,19 @@ const Cobranza = () => {
   const [filterEstado, setFilterEstado] = useState<string>("todos");
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const pageSize = 10;
 
   useEffect(() => {
     loadInvoices();
-  }, []);
+  }, [currentPage]);
 
   const loadInvoices = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await cobranzaService.getCobranzas();
+      const response = await cobranzaService.getCobranzas(currentPage, pageSize);
       if (response.error) {
         setError(response.error);
       } else {
@@ -87,6 +91,7 @@ const Cobranza = () => {
           user_id: cobranza.user_id,
         }));
         setInvoices(invoicesWithClient);
+        setTotalPages(Math.ceil(response.count / pageSize));
       }
     } catch (err) {
       setError("Error al cargar cobranzas");
@@ -300,6 +305,13 @@ const Cobranza = () => {
             </Table>
           </div>
         )}
+
+        <SimplePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          loading={loading}
+        />
 
         {/* Payment Dialog */}
         <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>

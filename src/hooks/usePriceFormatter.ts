@@ -4,7 +4,10 @@ export function usePriceFormatter() {
   const { convertToUSD, oficialRate, showInUSD } = useDolar();
 
   const formatPrice = (amount: number, currency: "VES" | "USD" = "VES"): string => {
-    if (showInUSD && currency === "VES") {
+    if (currency === "USD") {
+      return `$${amount.toFixed(2)} USD`;
+    }
+    if (showInUSD) {
       const usdAmount = convertToUSD(amount);
       return `$${usdAmount.toFixed(2)} USD`;
     }

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { usePriceFormatter } from "@/hooks/usePriceFormatter";
 import { useDolar } from "@/contexts/DolarContext";
+import { SimplePagination } from "@/components/SimplePagination";
 import {
   Table,
   TableBody,
@@ -69,6 +70,9 @@ const Ventas = () => {
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
   const [saleItems, setSaleItems] = useState<VentaItem[]>([]);
   const [loadingDetails, setLoadingDetails] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const pageSize = 10;
 
   const { formatPrice, formatPriceDual } = usePriceFormatter();
   const { convertToUSD, oficialRate } = useDolar();
@@ -78,7 +82,7 @@ const Ventas = () => {
     loadSales();
     loadClientes();
     loadProductos();
-  }, []);
+  }, [currentPage]);
 
   const loadProductos = async () => {
     try {
@@ -116,11 +120,12 @@ const Ventas = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await ventaService.getVentas();
+      const response = await ventaService.getVentas(currentPage, pageSize);
       if (response.error) {
         setError(response.error);
       } else {
         setSales(response.data || []);
+        setTotalPages(Math.ceil(response.count / pageSize));
       }
     } catch (err) {
       setError("Error al cargar ventas");
@@ -549,6 +554,13 @@ const Ventas = () => {
             </Table>
           </div>
         )}
+
+        <SimplePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          loading={loading}
+        />
       </div>
       {ConfirmDialog}
 

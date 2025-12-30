@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { usePriceFormatter } from "@/hooks/usePriceFormatter";
 import { useConfirm } from "@/hooks/useConfirm";
+import { SimplePagination } from "@/components/SimplePagination";
 import {
   Table,
   TableBody,
@@ -36,13 +37,16 @@ const Inventario = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const pageSize = 10;
 
   const { formatPrice } = usePriceFormatter();
   const { confirm, ConfirmDialog } = useConfirm();
 
   useEffect(() => {
     checkAuthAndLoadProducts();
-  }, []);
+  }, [currentPage]);
 
   const checkAuthAndLoadProducts = async () => {
     try {
@@ -73,8 +77,8 @@ const Inventario = () => {
       setLoading(true);
       setError(null);
 
-      // Cargar productos usando el servicio mock
-      const response = await inventarioService.getProductos(1, 100);
+      // Cargar productos usando el servicio con paginación
+      const response = await inventarioService.getProductos(currentPage, pageSize);
       if (response.error) {
         // Si es un error de "no hay productos", no mostrar como error
         if (
@@ -89,6 +93,7 @@ const Inventario = () => {
         }
       } else {
         setProducts(response.data || []);
+        setTotalPages(Math.ceil(response.count / pageSize));
       }
     } catch (err) {
       console.error("Unexpected error:", err);
@@ -341,7 +346,7 @@ const Inventario = () => {
                       <TableCell className="font-medium">{product.nombre_producto}</TableCell>
                       <TableCell>{product.categoria || "Sin categoría"}</TableCell>
                       <TableCell>{product.stock.toLocaleString()}</TableCell>
-                      <TableCell>{formatPrice(product.precio)}</TableCell>
+                      <TableCell>{formatPrice(product.precio, "USD")}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button variant="ghost" size="icon" onClick={() => handleEdit(product)}>
@@ -363,6 +368,13 @@ const Inventario = () => {
             </Table>
           </div>
         )}
+
+        <SimplePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          loading={loading}
+        />
       </div>
       {ConfirmDialog}
     </MainLayout>

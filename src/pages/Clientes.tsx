@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useConfirm } from "@/hooks/useConfirm";
+import { SimplePagination } from "@/components/SimplePagination";
 import {
   Table,
   TableBody,
@@ -45,16 +46,19 @@ const Clientes = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const pageSize = 10;
   const { confirm, ConfirmDialog } = useConfirm();
 
   useEffect(() => {
     loadClients();
-  }, []);
+  }, [currentPage]);
 
   const loadClients = async () => {
     try {
       setLoading(true);
-      const response = await clienteService.getClientes();
+      const response = await clienteService.getClientes(currentPage, pageSize);
       if (response.error) {
         setError(response.error);
       } else {
@@ -66,6 +70,7 @@ const Clientes = () => {
           ultimaCompra: "-",
         }));
         setClients(mappedClients);
+        setTotalPages(Math.ceil(response.count / pageSize));
       }
     } catch (err) {
       setError("Error al cargar clientes");
@@ -355,6 +360,13 @@ const Clientes = () => {
             </Table>
           </div>
         )}
+
+        <SimplePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          loading={loading}
+        />
       </div>
       {ConfirmDialog}
     </MainLayout>
