@@ -1,5 +1,6 @@
 import { ReactNode, useState, useEffect } from "react";
 import { Sidebar } from "./Sidebar";
+import { DolarDisplay } from "@/components/DolarDisplay";
 import { cn } from "@/lib/utils";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,9 +24,9 @@ export function MainLayout({ children }: MainLayoutProps) {
     };
 
     checkIsMobile();
-    window.addEventListener('resize', checkIsMobile);
+    window.addEventListener("resize", checkIsMobile);
 
-    return () => window.removeEventListener('resize', checkIsMobile);
+    return () => window.removeEventListener("resize", checkIsMobile);
   }, []);
 
   return (
@@ -39,18 +40,27 @@ export function MainLayout({ children }: MainLayoutProps) {
       )}
 
       {/* Sidebar */}
-      <div className={cn(
-        "fixed left-0 top-0 z-40 h-screen transition-transform duration-300 lg:translate-x-0",
-        sidebarOpen ? "translate-x-0" : "-translate-x-full"
-      )}>
+      <div
+        className={cn(
+          "fixed left-0 top-0 z-40 h-screen transition-transform duration-300 lg:translate-x-0",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
         <Sidebar onClose={() => setSidebarOpen(false)} />
       </div>
 
       {/* Main content */}
-      <main className={cn(
-        "transition-all duration-300 min-h-screen",
-        "lg:ml-64" // Desktop sidebar width
-      )}>
+      <main
+        className={cn(
+          "transition-all duration-300 min-h-screen",
+          "lg:ml-64" // Desktop sidebar width
+        )}
+      >
+        {/* Top header for desktop */}
+        <div className="hidden lg:flex fixed top-0 right-0 left-64 z-30 bg-card border-b border-border p-4 justify-end">
+          <DolarDisplay />
+        </div>
+
         {/* Mobile header */}
         <div className="lg:hidden fixed top-0 left-0 right-0 z-20 bg-card border-b border-border p-4 flex items-center justify-between">
           <Button
@@ -65,9 +75,7 @@ export function MainLayout({ children }: MainLayoutProps) {
           <div className="w-10" /> {/* Spacer for centering */}
         </div>
 
-        <div className="p-4 pt-16 lg:p-8 lg:pt-8">
-          {children}
-        </div>
+        <div className="p-4 pt-16 lg:p-8 lg:pt-20">{children}</div>
       </main>
     </div>
   );

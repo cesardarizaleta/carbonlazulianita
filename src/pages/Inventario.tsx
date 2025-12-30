@@ -3,6 +3,7 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { usePriceFormatter } from "@/hooks/usePriceFormatter";
 import {
   Table,
   TableBody,
@@ -35,6 +36,8 @@ const Inventario = () => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
+  const { formatPrice } = usePriceFormatter();
+
   useEffect(() => {
     checkAuthAndLoadProducts();
   }, []);
@@ -42,7 +45,9 @@ const Inventario = () => {
   const checkAuthAndLoadProducts = async () => {
     try {
       // Verificar si el usuario está autenticado
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
       if (!session) {
         setIsAuthenticated(false);
@@ -54,7 +59,7 @@ const Inventario = () => {
       setIsAuthenticated(true);
       await loadProducts();
     } catch (err) {
-      console.error('Auth check error:', err);
+      console.error("Auth check error:", err);
       setIsAuthenticated(false);
       setError("Error al verificar autenticación");
       setLoading(false);
@@ -70,26 +75,29 @@ const Inventario = () => {
       const response = await inventarioService.getProductos(1, 100);
       if (response.error) {
         // Si es un error de "no hay productos", no mostrar como error
-        if (response.error.includes('No data') || response.error.includes('empty') || response.data?.length === 0) {
+        if (
+          response.error.includes("No data") ||
+          response.error.includes("empty") ||
+          response.data?.length === 0
+        ) {
           setProducts([]);
         } else {
-          console.error('Service error:', response.error);
+          console.error("Service error:", response.error);
           setError(response.error);
         }
       } else {
         setProducts(response.data || []);
       }
     } catch (err) {
-      console.error('Unexpected error:', err);
+      console.error("Unexpected error:", err);
       setError("Error al conectar con la base de datos");
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredProducts = products.filter(
-    (product) =>
-      product.nombre_producto.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredProducts = products.filter(product =>
+    product.nombre_producto.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleAddProduct = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -97,7 +105,9 @@ const Inventario = () => {
     const formData = new FormData(e.currentTarget);
 
     // Obtener el usuario actual
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     if (!session?.user) {
       setError("Debes iniciar sesión para crear productos");
       return;
@@ -119,7 +129,9 @@ const Inventario = () => {
         if (response.error) {
           setError(response.error);
         } else {
-          setProducts(products.map(p => p.id === editingProduct.id ? { ...p, ...productData } : p));
+          setProducts(
+            products.map(p => (p.id === editingProduct.id ? { ...p, ...productData } : p))
+          );
         }
       } else {
         const response = await inventarioService.createProducto(productData);
@@ -163,7 +175,13 @@ const Inventario = () => {
             <h1 className="text-3xl font-display font-bold text-foreground">Inventario</h1>
             <p className="text-muted-foreground">Gestión de productos y stock</p>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setEditingProduct(null); }}>
+          <Dialog
+            open={isDialogOpen}
+            onOpenChange={open => {
+              setIsDialogOpen(open);
+              if (!open) setEditingProduct(null);
+            }}
+          >
             <DialogTrigger asChild>
               <Button className="gap-2">
                 <Plus className="w-4 h-4" />
@@ -180,23 +198,49 @@ const Inventario = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="nombre">Nombre del Producto</Label>
-                    <Input id="nombre" name="nombre" defaultValue={editingProduct?.nombre_producto} required />
+                    <Input
+                      id="nombre"
+                      name="nombre"
+                      defaultValue={editingProduct?.nombre_producto}
+                      required
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="categoria">Categoría</Label>
-                    <Input id="categoria" name="categoria" defaultValue={editingProduct?.categoria} />
+                    <Input
+                      id="categoria"
+                      name="categoria"
+                      defaultValue={editingProduct?.categoria}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="stock">Stock Actual</Label>
-                    <Input id="stock" name="stock" type="number" defaultValue={editingProduct?.stock} required />
+                    <Input
+                      id="stock"
+                      name="stock"
+                      type="number"
+                      defaultValue={editingProduct?.stock}
+                      required
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="precio">Precio ($)</Label>
-                    <Input id="precio" name="precio" type="number" step="0.01" defaultValue={editingProduct?.precio} required />
+                    <Input
+                      id="precio"
+                      name="precio"
+                      type="number"
+                      step="0.01"
+                      defaultValue={editingProduct?.precio}
+                      required
+                    />
                   </div>
                   <div className="col-span-2 space-y-2">
                     <Label htmlFor="descripcion">Descripción</Label>
-                    <Input id="descripcion" name="descripcion" defaultValue={editingProduct?.descripcion} />
+                    <Input
+                      id="descripcion"
+                      name="descripcion"
+                      defaultValue={editingProduct?.descripcion}
+                    />
                   </div>
                 </div>
                 <Button type="submit" className="w-full">
@@ -215,7 +259,7 @@ const Inventario = () => {
               placeholder="Buscar productos..."
               className="pl-10"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={e => setSearchTerm(e.target.value)}
             />
           </div>
           <div className="flex gap-2">
@@ -232,7 +276,11 @@ const Inventario = () => {
             <p className="text-destructive text-sm">{error}</p>
             {error.includes("autenticación") || error.includes("sesión") ? (
               <p className="text-sm text-muted-foreground mt-2">
-                Ve a la página de <a href="/login" className="text-primary hover:underline">inicio de sesión</a> para acceder.
+                Ve a la página de{" "}
+                <a href="/login" className="text-primary hover:underline">
+                  inicio de sesión
+                </a>{" "}
+                para acceder.
               </p>
             ) : null}
           </div>
@@ -272,27 +320,29 @@ const Inventario = () => {
                           Cargando productos...
                         </div>
                       ) : error ? (
-                        <div className="text-destructive">
-                          {error}
-                        </div>
+                        <div className="text-destructive">{error}</div>
                       ) : (
                         "No hay productos registrados. ¡Agrega el primero!"
                       )}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredProducts.map((product) => (
+                  filteredProducts.map(product => (
                     <TableRow key={product.id} className="hover:bg-muted/50 transition-colors">
                       <TableCell className="font-medium">{product.nombre_producto}</TableCell>
-                      <TableCell>{product.categoria || 'Sin categoría'}</TableCell>
+                      <TableCell>{product.categoria || "Sin categoría"}</TableCell>
                       <TableCell>{product.stock.toLocaleString()}</TableCell>
-                      <TableCell>${product.precio.toFixed(2)}</TableCell>
+                      <TableCell>{formatPrice(product.precio)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button variant="ghost" size="icon" onClick={() => handleEdit(product)}>
                             <Edit className="w-4 h-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleDelete(product.id)}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(product.id)}
+                          >
                             <Trash2 className="w-4 h-4 text-destructive" />
                           </Button>
                         </div>

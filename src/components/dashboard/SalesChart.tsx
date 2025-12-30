@@ -1,13 +1,21 @@
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 const data = [
-  { mes: 'Ene', ventas: 4000, cobranza: 3800 },
-  { mes: 'Feb', ventas: 3000, cobranza: 2800 },
-  { mes: 'Mar', ventas: 5000, cobranza: 4700 },
-  { mes: 'Abr', ventas: 4500, cobranza: 4200 },
-  { mes: 'May', ventas: 6000, cobranza: 5500 },
-  { mes: 'Jun', ventas: 5500, cobranza: 5200 },
-  { mes: 'Jul', ventas: 7000, cobranza: 6500 },
+  { mes: "Ene", ventas: 4000, cobranza: 3800 },
+  { mes: "Feb", ventas: 3000, cobranza: 2800 },
+  { mes: "Mar", ventas: 5000, cobranza: 4700 },
+  { mes: "Abr", ventas: 4500, cobranza: 4200 },
+  { mes: "May", ventas: 6000, cobranza: 5500 },
+  { mes: "Jun", ventas: 5500, cobranza: 5200 },
+  { mes: "Jul", ventas: 7000, cobranza: 6500 },
 ];
 
 export function SalesChart() {
@@ -22,48 +30,44 @@ export function SalesChart() {
           <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="colorVentas" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="hsl(50, 100%, 50%)" stopOpacity={0.8}/>
-                <stop offset="95%" stopColor="hsl(50, 100%, 50%)" stopOpacity={0}/>
+                <stop offset="5%" stopColor="hsl(50, 100%, 50%)" stopOpacity={0.8} />
+                <stop offset="95%" stopColor="hsl(50, 100%, 50%)" stopOpacity={0} />
               </linearGradient>
               <linearGradient id="colorCobranza" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="hsl(0, 85%, 55%)" stopOpacity={0.8}/>
-                <stop offset="95%" stopColor="hsl(0, 85%, 55%)" stopOpacity={0}/>
+                <stop offset="5%" stopColor="hsl(0, 85%, 55%)" stopOpacity={0.8} />
+                <stop offset="95%" stopColor="hsl(0, 85%, 55%)" stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(0, 0%, 90%)" />
-            <XAxis 
-              dataKey="mes" 
+            <XAxis dataKey="mes" stroke="hsl(0, 0%, 45%)" fontSize={12} />
+            <YAxis
               stroke="hsl(0, 0%, 45%)"
               fontSize={12}
+              tickFormatter={value => `$${value / 1000}k`}
             />
-            <YAxis 
-              stroke="hsl(0, 0%, 45%)"
-              fontSize={12}
-              tickFormatter={(value) => `$${value/1000}k`}
-            />
-            <Tooltip 
-              contentStyle={{ 
-                backgroundColor: 'hsl(0, 0%, 100%)',
-                border: '1px solid hsl(0, 0%, 90%)',
-                borderRadius: '8px',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+            <Tooltip
+              contentStyle={{
+                backgroundColor: "hsl(0, 0%, 100%)",
+                border: "1px solid hsl(0, 0%, 90%)",
+                borderRadius: "8px",
+                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
               }}
-              formatter={(value: number) => [`$${value.toLocaleString()}`, '']}
+              formatter={(value: number) => [`$${value.toLocaleString()}`, ""]}
             />
-            <Area 
-              type="monotone" 
-              dataKey="ventas" 
-              stroke="hsl(50, 100%, 50%)" 
-              fillOpacity={1} 
+            <Area
+              type="monotone"
+              dataKey="ventas"
+              stroke="hsl(50, 100%, 50%)"
+              fillOpacity={1}
               fill="url(#colorVentas)"
               strokeWidth={2}
               name="Ventas"
             />
-            <Area 
-              type="monotone" 
-              dataKey="cobranza" 
-              stroke="hsl(0, 85%, 55%)" 
-              fillOpacity={1} 
+            <Area
+              type="monotone"
+              dataKey="cobranza"
+              stroke="hsl(0, 85%, 55%)"
+              fillOpacity={1}
               fill="url(#colorCobranza)"
               strokeWidth={2}
               name="Cobranza"

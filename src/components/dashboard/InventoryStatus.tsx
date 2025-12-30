@@ -11,15 +11,17 @@ export function InventoryStatus() {
   return (
     <div className="bg-card rounded-xl border border-border shadow-sm p-6 animate-slide-up">
       <div className="mb-6">
-        <h3 className="text-lg font-display font-semibold text-foreground">Estado del Inventario</h3>
+        <h3 className="text-lg font-display font-semibold text-foreground">
+          Estado del Inventario
+        </h3>
         <p className="text-sm text-muted-foreground">Niveles de stock actuales</p>
       </div>
       <div className="space-y-5">
-        {inventoryItems.map((item) => {
+        {inventoryItems.map(item => {
           const percentage = (item.stock / item.capacidad) * 100;
           const isLow = percentage < 30;
           const isMedium = percentage >= 30 && percentage < 60;
-          
+
           return (
             <div key={item.nombre} className="space-y-2">
               <div className="flex justify-between items-center">
@@ -28,9 +30,9 @@ export function InventoryStatus() {
                   {item.stock.toLocaleString()} / {item.capacidad.toLocaleString()} {item.unidad}
                 </span>
               </div>
-              <Progress 
-                value={percentage} 
-                className={`h-2 ${isLow ? '[&>div]:bg-destructive' : isMedium ? '[&>div]:bg-warning' : '[&>div]:bg-success'}`}
+              <Progress
+                value={percentage}
+                className={`h-2 ${isLow ? "[&>div]:bg-destructive" : isMedium ? "[&>div]:bg-warning" : "[&>div]:bg-success"}`}
               />
             </div>
           );

@@ -1,6 +1,6 @@
-import { supabase } from '@/integrations/supabase/client';
-import type { Usuario, ApiResponse } from './types';
-import type { User } from '@supabase/supabase-js';
+import { supabase } from "@/integrations/supabase/client";
+import type { Usuario, ApiResponse } from "./types";
+import type { User } from "@supabase/supabase-js";
 
 class AuthService {
   // Iniciar sesión
@@ -21,9 +21,9 @@ class AuthService {
         return { data: usuario, error: null };
       }
 
-      return { data: null, error: 'Error al obtener información del usuario' };
+      return { data: null, error: "Error al obtener información del usuario" };
     } catch (err) {
-      return { data: null, error: 'Error inesperado en el inicio de sesión' };
+      return { data: null, error: "Error inesperado en el inicio de sesión" };
     }
   }
 
@@ -48,9 +48,9 @@ class AuthService {
         return { data: usuario, error: null };
       }
 
-      return { data: null, error: 'Usuario creado pero información no disponible' };
+      return { data: null, error: "Usuario creado pero información no disponible" };
     } catch (err) {
-      return { data: null, error: 'Error inesperado en el registro' };
+      return { data: null, error: "Error inesperado en el registro" };
     }
   }
 
@@ -63,38 +63,43 @@ class AuthService {
       }
       return { data: null, error: null };
     } catch (err) {
-      return { data: null, error: 'Error inesperado al cerrar sesión' };
+      return { data: null, error: "Error inesperado al cerrar sesión" };
     }
   }
 
   // Obtener usuario actual
   async getCurrentUser(): Promise<ApiResponse<Usuario>> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
-        return { data: null, error: 'No hay usuario autenticado' };
+        return { data: null, error: "No hay usuario autenticado" };
       }
 
       const usuario = this.createUserFromAuth(user);
       return { data: usuario, error: null };
     } catch (err) {
-      return { data: null, error: 'Error al obtener usuario actual' };
+      return { data: null, error: "Error al obtener usuario actual" };
     }
   }
 
   // Obtener perfil (ahora usa solo auth)
   async getProfile(userId: string): Promise<ApiResponse<Usuario>> {
     try {
-      const { data: { user }, error } = await supabase.auth.getUser();
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser();
 
       if (error || !user) {
-        return { data: null, error: 'Usuario no encontrado' };
+        return { data: null, error: "Usuario no encontrado" };
       }
 
       const usuario = this.createUserFromAuth(user);
       return { data: usuario, error: null };
     } catch (err) {
-      return { data: null, error: 'Error al obtener perfil' };
+      return { data: null, error: "Error al obtener perfil" };
     }
   }
 
@@ -102,11 +107,11 @@ class AuthService {
   private createUserFromAuth(user: User): Usuario {
     return {
       id: user.id,
-      email: user.email || '',
-      nombre: user.user_metadata?.nombre || user.email?.split('@')[0] || 'Usuario',
+      email: user.email || "",
+      nombre: user.user_metadata?.nombre || user.email?.split("@")[0] || "Usuario",
       telefono: user.user_metadata?.telefono,
       avatar_url: user.user_metadata?.avatar_url,
-      role: 'vendedor', // Rol por defecto
+      role: "vendedor", // Rol por defecto
     };
   }
 
@@ -123,7 +128,7 @@ class AuthService {
 
       return { data: null, error: null };
     } catch (err) {
-      return { data: null, error: 'Error al enviar email de recuperación' };
+      return { data: null, error: "Error al enviar email de recuperación" };
     }
   }
 }

@@ -11,7 +11,7 @@ import {
   ChevronRight,
   LogOut,
   User,
-  X
+  X,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
@@ -43,9 +43,9 @@ export function Sidebar({ onClose }: SidebarProps) {
     };
 
     checkIsMobile();
-    window.addEventListener('resize', checkIsMobile);
+    window.addEventListener("resize", checkIsMobile);
 
-    return () => window.removeEventListener('resize', checkIsMobile);
+    return () => window.removeEventListener("resize", checkIsMobile);
   }, []);
 
   const handleSignOut = async () => {
@@ -105,12 +105,8 @@ export function Sidebar({ onClose }: SidebarProps) {
               <User className="w-4 h-4 text-sidebar-primary-foreground" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-sidebar-foreground truncate">
-                {user.nombre}
-              </p>
-              <p className="text-xs text-sidebar-foreground/60 truncate">
-                {user.email}
-              </p>
+              <p className="text-sm font-medium text-sidebar-foreground truncate">{user.nombre}</p>
+              <p className="text-xs text-sidebar-foreground/60 truncate">{user.email}</p>
             </div>
           </div>
         </div>
@@ -118,7 +114,7 @@ export function Sidebar({ onClose }: SidebarProps) {
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {menuItems.map((item) => {
+        {menuItems.map(item => {
           const isActive = location.pathname === item.path;
           return (
             <NavLink

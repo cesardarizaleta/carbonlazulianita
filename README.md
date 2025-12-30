@@ -25,24 +25,28 @@ Una suite completa de gestión empresarial diseñada para pequeñas y medianas e
 ## 📦 Instalación
 
 ### Prerrequisitos
+
 - Node.js 18+ y npm
 - Cuenta en [Supabase](https://supabase.com)
 
 ### Pasos de Instalación
 
 1. **Clona el repositorio**:
+
    ```bash
    git clone <URL_DEL_REPOSITORIO>
    cd carbon-zulianita-suite
    ```
 
 2. **Instala dependencias**:
+
    ```bash
    npm install
    ```
 
 3. **Configura variables de entorno**:
    Crea un archivo `.env` en la raíz del proyecto con:
+
    ```env
    VITE_SUPABASE_PROJECT_ID=tu_project_id
    VITE_SUPABASE_PUBLISHABLE_KEY=tu_clave_anonima
@@ -56,6 +60,7 @@ Una suite completa de gestión empresarial diseñada para pequeñas y medianas e
    - Obtén la clave anónima del dashboard de Supabase.
 
 5. **Ejecuta el proyecto**:
+
    ```bash
    npm run dev
    ```
@@ -65,6 +70,7 @@ Una suite completa de gestión empresarial diseñada para pequeñas y medianas e
 ## ⚙️ Configuración de Supabase
 
 ### Crear Tablas
+
 Ejecuta este SQL en el **SQL Editor** de Supabase:
 
 ```sql
@@ -133,15 +139,18 @@ CREATE INDEX idx_cobranza_user_id ON cobranza(user_id);
 ```
 
 ### Configurar Seguridad
+
 - Ve a **Authentication > Policies** en Supabase.
 - Crea políticas RLS para cada tabla, permitiendo acceso solo a registros del usuario autenticado (ej. `user_id = auth.uid()`).
 
 ### Generar Tipos
+
 - Una vez creadas las tablas, ve a **Settings > API > Generate types** para actualizar los tipos TypeScript.
 
 ## 📖 Uso
 
 ### Navegación
+
 - **Dashboard**: Vista general con estadísticas.
 - **Inventario**: Agrega/edita productos.
 - **Ventas**: Registra nuevas ventas.
@@ -150,7 +159,9 @@ CREATE INDEX idx_cobranza_user_id ON cobranza(user_id);
 - **Configuración**: Ajustes del sistema.
 
 ### API Services
+
 Los servicios están desacoplados para fácil migración:
+
 - `clienteService`: CRUD de clientes.
 - `inventarioService`: Gestión de productos.
 - `ventaService`: Operaciones de ventas.
@@ -158,11 +169,44 @@ Los servicios están desacoplados para fácil migración:
 - `authService`: Autenticación.
 
 Ejemplo de uso:
+
 ```typescript
-import { clienteService } from '@/services';
+import { clienteService } from "@/services";
 
 const clientes = await clienteService.getClientes();
 ```
+
+## 🛠 Desarrollo
+
+### Formateo de Código
+
+Este proyecto utiliza **Prettier** para mantener un estilo de código consistente.
+
+```bash
+# Formatear todos los archivos
+npm run format
+
+# Verificar formato sin modificar archivos
+npm run format:check
+```
+
+### Linting
+
+Usamos ESLint integrado con Prettier para mantener la calidad del código.
+
+```bash
+# Ejecutar linting
+npm run lint
+```
+
+### Scripts Disponibles
+
+- `npm run dev` - Inicia el servidor de desarrollo
+- `npm run build` - Construye la aplicación para producción
+- `npm run preview` - Vista previa de la build de producción
+- `npm run lint` - Ejecuta ESLint
+- `npm run format` - Formatea el código con Prettier
+- `npm run format:check` - Verifica el formato del código
 
 ## 🤝 Contribución
 

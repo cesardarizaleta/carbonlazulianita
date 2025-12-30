@@ -62,9 +62,7 @@ const Login = () => {
             <CardTitle className="text-2xl font-display font-bold">
               Bienvenido a <span className="text-primary">La Zulianita</span>
             </CardTitle>
-            <CardDescription>
-              Sistema ERP - Gestiona tu negocio de manera eficiente
-            </CardDescription>
+            <CardDescription>Sistema ERP - Gestiona tu negocio de manera eficiente</CardDescription>
           </div>
         </CardHeader>
         <CardContent>
@@ -76,56 +74,56 @@ const Login = () => {
           )}
 
           <form onSubmit={handleSignIn} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Correo Electrónico</Label>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder="usuario@lazulianita.com"
-                    required
-                    className="h-11"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    onInput={(e) => setEmail((e.target as HTMLInputElement).value)}
-                    autoComplete="email"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Contraseña</Label>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      name="password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="••••••••"
-                      required
-                      className="h-11 pr-10"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      onInput={(e) => setPassword((e.target as HTMLInputElement).value)}
-                      autoComplete="current-password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-                <Button type="submit" className="w-full h-11 gap-2" disabled={isLoading}>
-                  {isLoading ? (
-                    <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      <LogIn className="w-4 h-4" />
-                      Iniciar Sesión
-                    </>
-                  )}
-                </Button>
-              </form>
+            <div className="space-y-2">
+              <Label htmlFor="email">Correo Electrónico</Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                placeholder="usuario@lazulianita.com"
+                required
+                className="h-11"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                onInput={e => setEmail((e.target as HTMLInputElement).value)}
+                autoComplete="email"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Contraseña</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  required
+                  className="h-11 pr-10"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  onInput={e => setPassword((e.target as HTMLInputElement).value)}
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+            <Button type="submit" className="w-full h-11 gap-2" disabled={isLoading}>
+              {isLoading ? (
+                <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+              ) : (
+                <>
+                  <LogIn className="w-4 h-4" />
+                  Iniciar Sesión
+                </>
+              )}
+            </Button>
+          </form>
 
           <p className="text-center text-xs text-muted-foreground mt-6">
             Sistema de gestión empresarial • La Zulianita © 2025

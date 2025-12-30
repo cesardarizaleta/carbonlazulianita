@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { authService } from '@/services';
-import type { Usuario } from '@/services';
+import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { authService } from "@/services";
+import type { Usuario } from "@/services";
 
 interface AuthContextType {
   user: Usuario | null;
@@ -29,10 +29,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Verificar sesión inicial - solo una vez
     const initializeAuth = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession();
 
         if (error) {
-          console.error('Error getting session:', error);
+          console.error("Error getting session:", error);
           return;
         }
 
@@ -40,16 +43,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
           // Crear usuario directamente desde la sesión sin llamada adicional
           const usuario: Usuario = {
             id: session.user.id,
-            email: session.user.email || '',
-            nombre: session.user.user_metadata?.nombre || session.user.email?.split('@')[0] || 'Usuario',
+            email: session.user.email || "",
+            nombre:
+              session.user.user_metadata?.nombre || session.user.email?.split("@")[0] || "Usuario",
             telefono: session.user.user_metadata?.telefono,
             avatar_url: session.user.user_metadata?.avatar_url,
-            role: 'vendedor',
+            role: "vendedor",
           };
           setUser(usuario);
         }
       } catch (error) {
-        console.error('Error during auth initialization:', error);
+        console.error("Error during auth initialization:", error);
       } finally {
         if (mounted) {
           setLoading(false);
@@ -67,16 +71,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
     initializeAuth();
 
     // Escuchar cambios de autenticación (solo para eventos futuros)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (!mounted) return;
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
 
-        if (event === 'SIGNED_OUT') {
-          setUser(null);
-        }
-        // Para SIGNED_IN, ya lo manejamos en signIn() y initializeAuth()
+      if (event === "SIGNED_OUT") {
+        setUser(null);
       }
-    );
+      // Para SIGNED_IN, ya lo manejamos en signIn() y initializeAuth()
+    });
 
     return () => {
       mounted = false;
@@ -103,9 +107,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       return { error: null };
     } catch (error) {
-      console.error('Sign in error:', error);
+      console.error("Sign in error:", error);
       setIsSigningIn(false);
-      return { error: 'Error inesperado al iniciar sesión' };
+      return { error: "Error inesperado al iniciar sesión" };
     }
   };
 
@@ -119,8 +123,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       return { error: null };
     } catch (error) {
-      console.error('Sign up error:', error);
-      return { error: 'Error inesperado al registrarse' };
+      console.error("Sign up error:", error);
+      return { error: "Error inesperado al registrarse" };
     }
   };
 
@@ -129,7 +133,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       await authService.signOut();
       setUser(null);
     } catch (error) {
-      console.error('Sign out error:', error);
+      console.error("Sign out error:", error);
     }
   };
 
@@ -138,8 +142,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const result = await authService.resetPassword(email);
       return { error: result.error };
     } catch (error) {
-      console.error('Reset password error:', error);
-      return { error: 'Error al enviar email de recuperación' };
+      console.error("Reset password error:", error);
+      return { error: "Error al enviar email de recuperación" };
     }
   };
 
@@ -152,17 +156,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
     resetPassword,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }

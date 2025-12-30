@@ -5,7 +5,7 @@ export interface Usuario {
   nombre: string;
   telefono?: string;
   avatar_url?: string;
-  role?: 'admin' | 'vendedor' | 'cobrador';
+  role?: "admin" | "vendedor" | "cobrador";
 }
 
 export interface Cliente {

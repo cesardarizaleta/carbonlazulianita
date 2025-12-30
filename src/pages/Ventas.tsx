@@ -3,6 +3,7 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { usePriceFormatter } from "@/hooks/usePriceFormatter";
 import {
   Table,
   TableBody,
@@ -50,6 +51,8 @@ const Ventas = () => {
   const [filterEstado, setFilterEstado] = useState<string>("todos");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
+  const { formatPrice } = usePriceFormatter();
+
   useEffect(() => {
     loadSales();
   }, []);
@@ -71,7 +74,7 @@ const Ventas = () => {
     }
   };
 
-  const filteredSales = sales.filter((sale) => {
+  const filteredSales = sales.filter(sale => {
     const matchesSearch =
       (sale.cliente?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
       sale.id.toLowerCase().includes(searchTerm.toLowerCase());
@@ -133,7 +136,9 @@ const Ventas = () => {
                   <Label htmlFor="total">Total ($)</Label>
                   <Input id="total" name="total" type="number" step="0.01" required />
                 </div>
-                <Button type="submit" className="w-full">Registrar Venta</Button>
+                <Button type="submit" className="w-full">
+                  Registrar Venta
+                </Button>
               </form>
             </DialogContent>
           </Dialog>
@@ -147,7 +152,7 @@ const Ventas = () => {
               placeholder="Buscar por cliente o ID..."
               className="pl-10"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={e => setSearchTerm(e.target.value)}
             />
           </div>
           <Select value={filterEstado} onValueChange={setFilterEstado}>
@@ -165,7 +170,7 @@ const Ventas = () => {
           </Select>
           <Badge variant="outline" className="px-4 py-2 h-10 flex items-center">
             <ShoppingCart className="w-4 h-4 mr-2" />
-            Total: ${totalVentas.toLocaleString()}
+            Total: {formatPrice(totalVentas)}
           </Badge>
         </div>
 
@@ -203,14 +208,18 @@ const Ventas = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredSales.map((sale) => (
+                  filteredSales.map(sale => (
                     <TableRow key={sale.id} className="hover:bg-muted/50 transition-colors">
                       <TableCell className="font-mono text-sm">{sale.id}</TableCell>
                       <TableCell>{new Date(sale.fecha_venta).toLocaleDateString()}</TableCell>
-                      <TableCell className="font-medium">{sale.cliente_nombre || sale.cliente_id || "N/A"}</TableCell>
-                      <TableCell className="font-semibold">${sale.total.toFixed(2)}</TableCell>
+                      <TableCell className="font-medium">
+                        {sale.cliente_nombre || sale.cliente_id || "N/A"}
+                      </TableCell>
+                      <TableCell className="font-semibold">{formatPrice(sale.total)}</TableCell>
                       <TableCell>
-                        <Badge variant={estadoBadgeVariant[sale.estado] || "secondary"}>{sale.estado}</Badge>
+                        <Badge variant={estadoBadgeVariant[sale.estado] || "secondary"}>
+                          {sale.estado}
+                        </Badge>
                       </TableCell>
                       <TableCell className="text-right">
                         <Button variant="ghost" size="icon">

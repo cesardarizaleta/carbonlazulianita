@@ -32,12 +32,15 @@ const Dashboard = () => {
 
       // Load inventory data
       const inventoryResponse = await inventarioService.getProductos(1, 100);
-      const inventarioTotal = inventoryResponse.data?.reduce((acc, item) => acc + item.stock, 0) || 0;
+      const inventarioTotal =
+        inventoryResponse.data?.reduce((acc, item) => acc + item.stock, 0) || 0;
 
       // Load pending collections
       const cobranzaResponse = await cobranzaService.getCobranzas(1, 100);
-      const cuentasPorCobrar = cobranzaResponse.data?.reduce((acc, cob) => acc + cob.monto_pendiente, 0) || 0;
-      const pedidosPendientes = cobranzaResponse.data?.filter(cob => cob.estado !== "pagado").length || 0;
+      const cuentasPorCobrar =
+        cobranzaResponse.data?.reduce((acc, cob) => acc + cob.monto_pendiente, 0) || 0;
+      const pedidosPendientes =
+        cobranzaResponse.data?.filter(cob => cob.estado !== "pagado").length || 0;
 
       setStats({
         ventasMes,
@@ -60,7 +63,13 @@ const Dashboard = () => {
             Bienvenido a <span className="text-primary">La Zulianita</span>
           </h1>
           <p className="text-muted-foreground mt-1">
-            Resumen general del negocio • {new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            Resumen general del negocio •{" "}
+            {new Date().toLocaleDateString("es-ES", {
+              weekday: "long",
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}
           </p>
         </div>
 

@@ -84,7 +84,7 @@ const Cobranza = () => {
           fecha_vencimiento: cobranza.fecha_vencimiento,
           estado: cobranza.estado,
           notas: cobranza.notas,
-          user_id: cobranza.user_id
+          user_id: cobranza.user_id,
         }));
         setInvoices(invoicesWithClient);
       }
@@ -95,8 +95,8 @@ const Cobranza = () => {
     }
   };
 
-  const filteredInvoices = invoices.filter((invoice) => {
-    const matchesSearch = 
+  const filteredInvoices = invoices.filter(invoice => {
+    const matchesSearch =
       invoice.cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
       invoice.id.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterEstado === "todos" || invoice.estado === filterEstado;
@@ -105,11 +105,11 @@ const Cobranza = () => {
 
   const totalPendiente = invoices
     .filter(inv => inv.estado !== "pagado")
-    .reduce((acc, inv) => acc + (inv.monto_pendiente), 0);
+    .reduce((acc, inv) => acc + inv.monto_pendiente, 0);
 
   const totalVencido = invoices
     .filter(inv => inv.estado === "vencido")
-    .reduce((acc, inv) => acc + (inv.monto_pendiente), 0);
+    .reduce((acc, inv) => acc + inv.monto_pendiente, 0);
 
   const handlePayment = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -120,14 +120,21 @@ const Cobranza = () => {
 
     try {
       // For now, just update the local state. In a real app, you'd call an update service
-      setInvoices(invoices.map(inv => {
-        if (inv.id === selectedInvoice.id) {
-          const nuevoMontoPendiente = Math.max(0, inv.monto_pendiente - montoPago);
-          const nuevoEstado = nuevoMontoPendiente === 0 ? "pagado" : nuevoMontoPendiente < inv.monto_pendiente ? "parcial" : inv.estado;
-          return { ...inv, monto_pendiente: nuevoMontoPendiente, estado: nuevoEstado };
-        }
-        return inv;
-      }));
+      setInvoices(
+        invoices.map(inv => {
+          if (inv.id === selectedInvoice.id) {
+            const nuevoMontoPendiente = Math.max(0, inv.monto_pendiente - montoPago);
+            const nuevoEstado =
+              nuevoMontoPendiente === 0
+                ? "pagado"
+                : nuevoMontoPendiente < inv.monto_pendiente
+                  ? "parcial"
+                  : inv.estado;
+            return { ...inv, monto_pendiente: nuevoMontoPendiente, estado: nuevoEstado };
+          }
+          return inv;
+        })
+      );
       setIsPaymentDialogOpen(false);
       setSelectedInvoice(null);
     } catch (err) {
@@ -158,7 +165,9 @@ const Cobranza = () => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Pendiente</p>
-                <p className="text-2xl font-display font-bold">${totalPendiente.toLocaleString()}</p>
+                <p className="text-2xl font-display font-bold">
+                  ${totalPendiente.toLocaleString()}
+                </p>
               </div>
             </div>
           </div>
@@ -169,7 +178,9 @@ const Cobranza = () => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Vencido</p>
-                <p className="text-2xl font-display font-bold text-destructive">${totalVencido.toLocaleString()}</p>
+                <p className="text-2xl font-display font-bold text-destructive">
+                  ${totalVencido.toLocaleString()}
+                </p>
               </div>
             </div>
           </div>
@@ -180,7 +191,9 @@ const Cobranza = () => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Facturas Pagadas</p>
-                <p className="text-2xl font-display font-bold">{invoices.filter(i => i.estado === "pagado").length}</p>
+                <p className="text-2xl font-display font-bold">
+                  {invoices.filter(i => i.estado === "pagado").length}
+                </p>
               </div>
             </div>
           </div>
@@ -194,7 +207,7 @@ const Cobranza = () => {
               placeholder="Buscar por cliente o factura..."
               className="pl-10"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={e => setSearchTerm(e.target.value)}
             />
           </div>
           <Select value={filterEstado} onValueChange={setFilterEstado}>
@@ -245,16 +258,25 @@ const Cobranza = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredInvoices.map((invoice) => {
+                  filteredInvoices.map(invoice => {
                     const Icon = estadoIcon[invoice.estado] || Clock;
                     return (
                       <TableRow key={invoice.id} className="hover:bg-muted/50 transition-colors">
                         <TableCell className="font-mono text-sm">{invoice.id}</TableCell>
                         <TableCell className="font-mono text-sm">{invoice.venta_id}</TableCell>
-                        <TableCell>{invoice.fecha_vencimiento ? new Date(invoice.fecha_vencimiento).toLocaleDateString() : "N/A"}</TableCell>
-                        <TableCell className="font-semibold">${invoice.monto_pendiente.toFixed(2)}</TableCell>
                         <TableCell>
-                          <Badge variant={estadoBadgeVariant[invoice.estado] || "secondary"} className="gap-1">
+                          {invoice.fecha_vencimiento
+                            ? new Date(invoice.fecha_vencimiento).toLocaleDateString()
+                            : "N/A"}
+                        </TableCell>
+                        <TableCell className="font-semibold">
+                          ${invoice.monto_pendiente.toFixed(2)}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={estadoBadgeVariant[invoice.estado] || "secondary"}
+                            className="gap-1"
+                          >
                             <Icon className="w-3 h-3" />
                             {invoice.estado}
                           </Badge>
@@ -288,22 +310,34 @@ const Cobranza = () => {
             {selectedInvoice && (
               <form onSubmit={handlePayment} className="space-y-4">
                 <div className="bg-muted/50 rounded-lg p-4 space-y-2">
-                  <p className="text-sm"><span className="text-muted-foreground">Factura:</span> {selectedInvoice.id}</p>
-                  <p className="text-sm"><span className="text-muted-foreground">Cliente:</span> {selectedInvoice.cliente}</p>
-                  <p className="text-sm"><span className="text-muted-foreground">Saldo pendiente:</span> <span className="font-semibold">${selectedInvoice.monto_pendiente.toFixed(2)}</span></p>
+                  <p className="text-sm">
+                    <span className="text-muted-foreground">Factura:</span> {selectedInvoice.id}
+                  </p>
+                  <p className="text-sm">
+                    <span className="text-muted-foreground">Cliente:</span>{" "}
+                    {selectedInvoice.cliente}
+                  </p>
+                  <p className="text-sm">
+                    <span className="text-muted-foreground">Saldo pendiente:</span>{" "}
+                    <span className="font-semibold">
+                      ${selectedInvoice.monto_pendiente.toFixed(2)}
+                    </span>
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="monto">Monto a Pagar ($)</Label>
-                  <Input 
-                    id="monto" 
-                    name="monto" 
-                    type="number" 
-                    step="0.01" 
+                  <Input
+                    id="monto"
+                    name="monto"
+                    type="number"
+                    step="0.01"
                     max={selectedInvoice.monto_pendiente}
-                    required 
+                    required
                   />
                 </div>
-                <Button type="submit" className="w-full">Confirmar Pago</Button>
+                <Button type="submit" className="w-full">
+                  Confirmar Pago
+                </Button>
               </form>
             )}
           </DialogContent>

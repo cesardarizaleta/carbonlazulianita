@@ -1,7 +1,7 @@
-import { ReactNode } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { Loader2 } from 'lucide-react';
+import { ReactNode } from "react";
+import { Navigate, useLocation } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { Loader2 } from "lucide-react";
 
 interface AuthGuardProps {
   children: ReactNode;
@@ -9,11 +9,7 @@ interface AuthGuardProps {
   redirectTo?: string;
 }
 
-export function AuthGuard({
-  children,
-  requireAuth = true,
-  redirectTo = '/login'
-}: AuthGuardProps) {
+export function AuthGuard({ children, requireAuth = true, redirectTo = "/login" }: AuthGuardProps) {
   const { user, loading } = useAuth();
   const location = useLocation();
 
@@ -24,7 +20,9 @@ export function AuthGuard({
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
           <p className="text-muted-foreground">Verificando autenticación...</p>
-          <p className="text-xs text-muted-foreground mt-2">Esto debería tomar solo unos segundos</p>
+          <p className="text-xs text-muted-foreground mt-2">
+            Esto debería tomar solo unos segundos
+          </p>
         </div>
       </div>
     );

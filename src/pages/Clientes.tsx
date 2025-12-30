@@ -73,7 +73,7 @@ const Clientes = () => {
   };
 
   const filteredClients = clients.filter(
-    (client) =>
+    client =>
       client.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
       client.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -94,7 +94,7 @@ const Clientes = () => {
         if (response.error) {
           setError(response.error);
         } else {
-          setClients(clients.map(c => c.id === editingClient.id ? { ...c, ...clientData } : c));
+          setClients(clients.map(c => (c.id === editingClient.id ? { ...c, ...clientData } : c)));
         }
       } else {
         const response = await clienteService.createCliente(clientData);
@@ -136,7 +136,12 @@ const Clientes = () => {
   };
 
   const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    return name
+      .split(" ")
+      .map(n => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
   };
 
   return (
@@ -148,7 +153,13 @@ const Clientes = () => {
             <h1 className="text-3xl font-display font-bold text-foreground">Clientes</h1>
             <p className="text-muted-foreground">Gestión de cartera de clientes</p>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setEditingClient(null); }}>
+          <Dialog
+            open={isDialogOpen}
+            onOpenChange={open => {
+              setIsDialogOpen(open);
+              if (!open) setEditingClient(null);
+            }}
+          >
             <DialogTrigger asChild>
               <Button className="gap-2">
                 <Plus className="w-4 h-4" />
@@ -161,7 +172,9 @@ const Clientes = () => {
                   {editingClient ? "Editar Cliente" : "Agregar Cliente"}
                 </DialogTitle>
                 <DialogDescription>
-                  {editingClient ? "Modifica los datos del cliente." : "Ingresa los datos del nuevo cliente."}
+                  {editingClient
+                    ? "Modifica los datos del cliente."
+                    : "Ingresa los datos del nuevo cliente."}
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleAddClient} className="space-y-4">
@@ -172,22 +185,38 @@ const Clientes = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
-                    <Input id="email" name="email" type="email" defaultValue={editingClient?.email} required />
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      defaultValue={editingClient?.email}
+                      required
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="telefono">Teléfono</Label>
-                    <Input id="telefono" name="telefono" defaultValue={editingClient?.telefono} required />
+                    <Input
+                      id="telefono"
+                      name="telefono"
+                      defaultValue={editingClient?.telefono}
+                      required
+                    />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="direccion">Dirección</Label>
-                  <Input id="direccion" name="direccion" defaultValue={editingClient?.direccion} required />
+                  <Input
+                    id="direccion"
+                    name="direccion"
+                    defaultValue={editingClient?.direccion}
+                    required
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="tipo">Tipo de Cliente</Label>
-                  <select 
-                    id="tipo" 
-                    name="tipo" 
+                  <select
+                    id="tipo"
+                    name="tipo"
                     defaultValue={editingClient?.tipo || "regular"}
                     className="w-full px-3 py-2 rounded-lg border border-input bg-background"
                   >
@@ -212,7 +241,7 @@ const Clientes = () => {
               placeholder="Buscar clientes..."
               className="pl-10"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={e => setSearchTerm(e.target.value)}
             />
           </div>
           <Badge variant="outline" className="px-4 py-2 h-10 flex items-center">
@@ -256,7 +285,7 @@ const Clientes = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredClients.map((client) => (
+                  filteredClients.map(client => (
                     <TableRow key={client.id} className="hover:bg-muted/50 transition-colors">
                       <TableCell>
                         <div className="flex items-center gap-3">
@@ -292,14 +321,20 @@ const Clientes = () => {
                       <TableCell>
                         <Badge variant={tipoBadgeVariant[client.tipo]}>{client.tipo}</Badge>
                       </TableCell>
-                      <TableCell className="font-semibold">${client.totalCompras.toLocaleString()}</TableCell>
+                      <TableCell className="font-semibold">
+                        ${client.totalCompras.toLocaleString()}
+                      </TableCell>
                       <TableCell>{client.ultimaCompra}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button variant="ghost" size="icon" onClick={() => handleEdit(client)}>
                             <Edit className="w-4 h-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleDelete(client.id)}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(client.id)}
+                          >
                             <Trash2 className="w-4 h-4 text-destructive" />
                           </Button>
                         </div>

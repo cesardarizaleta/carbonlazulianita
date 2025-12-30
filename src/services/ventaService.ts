@@ -1,5 +1,5 @@
-import { supabase } from '@/integrations/supabase/client';
-import type { Venta, VentaItem, ApiResponse, PaginatedResponse } from './types';
+import { supabase } from "@/integrations/supabase/client";
+import type { Venta, VentaItem, ApiResponse, PaginatedResponse } from "./types";
 
 class VentaService {
   // Obtener todas las ventas (con paginación)
@@ -9,15 +9,18 @@ class VentaService {
       const to = from + limit - 1;
 
       const { data, error, count } = await supabase
-        .from('ventas')
-        .select(`
+        .from("ventas")
+        .select(
+          `
           *,
           clientes:cliente_id (
             nombre
           )
-        `, { count: 'exact' })
+        `,
+          { count: "exact" }
+        )
         .range(from, to)
-        .order('fecha_venta', { ascending: false });
+        .order("fecha_venta", { ascending: false });
 
       if (error) {
         return { data: [], count: 0, error: error.message };
@@ -26,16 +29,16 @@ class VentaService {
       // Transformar los datos para incluir el nombre del cliente
       const transformedData = (data || []).map(venta => ({
         ...venta,
-        cliente: venta.clientes?.nombre || 'Cliente desconocido'
+        cliente: venta.clientes?.nombre || "Cliente desconocido",
       }));
 
       return {
         data: transformedData,
         count: count || 0,
-        error: null
+        error: null,
       };
     } catch (err) {
-      return { data: [], count: 0, error: 'Error al obtener ventas' };
+      return { data: [], count: 0, error: "Error al obtener ventas" };
     }
   }
 
@@ -44,14 +47,16 @@ class VentaService {
     try {
       // Obtener la venta con información del cliente
       const { data: ventaData, error: ventaError } = await supabase
-        .from('ventas')
-        .select(`
+        .from("ventas")
+        .select(
+          `
           *,
           clientes:cliente_id (
             nombre
           )
-        `)
-        .eq('id', id)
+        `
+        )
+        .eq("id", id)
         .single();
 
       if (ventaError) {
@@ -60,9 +65,9 @@ class VentaService {
 
       // Obtener los items de la venta
       const { data: itemsData, error: itemsError } = await supabase
-        .from('venta_items')
-        .select('*')
-        .eq('venta_id', id);
+        .from("venta_items")
+        .select("*")
+        .eq("venta_id", id);
 
       if (itemsError) {
         return { data: null, error: itemsError.message };
@@ -70,28 +75,33 @@ class VentaService {
 
       const venta = {
         ...ventaData,
-        cliente: ventaData.clientes?.nombre || 'Cliente desconocido'
+        cliente: ventaData.clientes?.nombre || "Cliente desconocido",
       };
 
       return { data: { venta, items: itemsData || [] }, error: null };
     } catch (err) {
-      return { data: null, error: 'Error al obtener venta' };
+      return { data: null, error: "Error al obtener venta" };
     }
   }
 
   // Crear venta
-  async createVenta(ventaData: Omit<Venta, 'id'>, items: Omit<VentaItem, 'id' | 'venta_id'>[]): Promise<ApiResponse<Venta>> {
+  async createVenta(
+    ventaData: Omit<Venta, "id">,
+    items: Omit<VentaItem, "id" | "venta_id">[]
+  ): Promise<ApiResponse<Venta>> {
     try {
       // Crear la venta
       const { data: venta, error: ventaError } = await supabase
-        .from('ventas')
+        .from("ventas")
         .insert([ventaData])
-        .select(`
+        .select(
+          `
           *,
           clientes:cliente_id (
             nombre
           )
-        `)
+        `
+        )
         .single();
 
       if (ventaError) {
@@ -102,28 +112,26 @@ class VentaService {
       if (items.length > 0) {
         const itemsWithVentaId = items.map(item => ({
           ...item,
-          venta_id: venta.id
+          venta_id: venta.id,
         }));
 
-        const { error: itemsError } = await supabase
-          .from('venta_items')
-          .insert(itemsWithVentaId);
+        const { error: itemsError } = await supabase.from("venta_items").insert(itemsWithVentaId);
 
         if (itemsError) {
           // Si falla la creación de items, eliminar la venta
-          await supabase.from('ventas').delete().eq('id', venta.id);
+          await supabase.from("ventas").delete().eq("id", venta.id);
           return { data: null, error: itemsError.message };
         }
       }
 
       const transformedVenta = {
         ...venta,
-        cliente: venta.clientes?.nombre || 'Cliente desconocido'
+        cliente: venta.clientes?.nombre || "Cliente desconocido",
       };
 
       return { data: transformedVenta, error: null };
     } catch (err) {
-      return { data: null, error: 'Error al crear venta' };
+      return { data: null, error: "Error al crear venta" };
     }
   }
 
@@ -131,15 +139,17 @@ class VentaService {
   async updateVenta(id: string, updates: Partial<Venta>): Promise<ApiResponse<Venta>> {
     try {
       const { data, error } = await supabase
-        .from('ventas')
+        .from("ventas")
         .update(updates)
-        .eq('id', id)
-        .select(`
+        .eq("id", id)
+        .select(
+          `
           *,
           clientes:cliente_id (
             nombre
           )
-        `)
+        `
+        )
         .single();
 
       if (error) {
@@ -148,12 +158,12 @@ class VentaService {
 
       const transformedVenta = {
         ...data,
-        cliente: data.clientes?.nombre || 'Cliente desconocido'
+        cliente: data.clientes?.nombre || "Cliente desconocido",
       };
 
       return { data: transformedVenta, error: null };
     } catch (err) {
-      return { data: null, error: 'Error al actualizar venta' };
+      return { data: null, error: "Error al actualizar venta" };
     }
   }
 
@@ -161,20 +171,14 @@ class VentaService {
   async deleteVenta(id: string): Promise<ApiResponse<null>> {
     try {
       // Primero eliminar los items de la venta
-      const { error: itemsError } = await supabase
-        .from('venta_items')
-        .delete()
-        .eq('venta_id', id);
+      const { error: itemsError } = await supabase.from("venta_items").delete().eq("venta_id", id);
 
       if (itemsError) {
         return { data: null, error: itemsError.message };
       }
 
       // Luego eliminar la venta
-      const { error: ventaError } = await supabase
-        .from('ventas')
-        .delete()
-        .eq('id', id);
+      const { error: ventaError } = await supabase.from("ventas").delete().eq("id", id);
 
       if (ventaError) {
         return { data: null, error: ventaError.message };
@@ -182,27 +186,34 @@ class VentaService {
 
       return { data: null, error: null };
     } catch (err) {
-      return { data: null, error: 'Error al eliminar venta' };
+      return { data: null, error: "Error al eliminar venta" };
     }
   }
 
   // Buscar ventas
-  async searchVentas(query: string, page: number = 1, limit: number = 10): Promise<PaginatedResponse<Venta>> {
+  async searchVentas(
+    query: string,
+    page: number = 1,
+    limit: number = 10
+  ): Promise<PaginatedResponse<Venta>> {
     try {
       const from = (page - 1) * limit;
       const to = from + limit - 1;
 
       const { data, error, count } = await supabase
-        .from('ventas')
-        .select(`
+        .from("ventas")
+        .select(
+          `
           *,
           clientes:cliente_id (
             nombre
           )
-        `, { count: 'exact' })
+        `,
+          { count: "exact" }
+        )
         .or(`id.ilike.%${query}%`)
         .range(from, to)
-        .order('fecha_venta', { ascending: false });
+        .order("fecha_venta", { ascending: false });
 
       if (error) {
         return { data: [], count: 0, error: error.message };
@@ -211,16 +222,16 @@ class VentaService {
       // Transformar los datos para incluir el nombre del cliente
       const transformedData = (data || []).map(venta => ({
         ...venta,
-        cliente: venta.clientes?.nombre || 'Cliente desconocido'
+        cliente: venta.clientes?.nombre || "Cliente desconocido",
       }));
 
       return {
         data: transformedData,
         count: count || 0,
-        error: null
+        error: null,
       };
     } catch (err) {
-      return { data: [], count: 0, error: 'Error al buscar ventas' };
+      return { data: [], count: 0, error: "Error al buscar ventas" };
     }
   }
 }

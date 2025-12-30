@@ -10,13 +10,18 @@ import { Building2, Bell, Shield, Palette, Users, Database } from "lucide-react"
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { configService } from "@/services";
-import type { ConfiguracionEmpresa, ConfiguracionNotificaciones, ConfiguracionSistema } from "@/services";
+import type {
+  ConfiguracionEmpresa,
+  ConfiguracionNotificaciones,
+  ConfiguracionSistema,
+} from "@/services";
 import logoZulianita from "@/assets/logo-zulianita.jpg";
 
 const Configuracion = () => {
   const { user } = useAuth();
   const [empresaConfig, setEmpresaConfig] = useState<ConfiguracionEmpresa | null>(null);
-  const [notificacionesConfig, setNotificacionesConfig] = useState<ConfiguracionNotificaciones | null>(null);
+  const [notificacionesConfig, setNotificacionesConfig] =
+    useState<ConfiguracionNotificaciones | null>(null);
   const [sistemaConfig, setSistemaConfig] = useState<ConfiguracionSistema | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -41,7 +46,7 @@ const Configuracion = () => {
       if (notifRes.data) setNotificacionesConfig(notifRes.data);
       if (sistemaRes.data) setSistemaConfig(sistemaRes.data);
     } catch (error) {
-      console.error('Error loading configurations:', error);
+      console.error("Error loading configurations:", error);
     } finally {
       setLoading(false);
     }
@@ -51,7 +56,7 @@ const Configuracion = () => {
     if (!empresaConfig || !user?.id) return;
     const result = await configService.updateEmpresaConfig(empresaConfig);
     if (result.error) {
-      console.error('Error saving empresa config:', result.error);
+      console.error("Error saving empresa config:", result.error);
     }
   };
 
@@ -59,7 +64,7 @@ const Configuracion = () => {
     if (!notificacionesConfig || !user?.id) return;
     const result = await configService.updateNotificacionesConfig(notificacionesConfig);
     if (result.error) {
-      console.error('Error saving notificaciones config:', result.error);
+      console.error("Error saving notificaciones config:", result.error);
     }
   };
 
@@ -99,41 +104,55 @@ const Configuracion = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-6">
-              <img 
-                src={empresaConfig?.logo_url || logoZulianita} 
-                alt="Logo" 
+              <img
+                src={empresaConfig?.logo_url || logoZulianita}
+                alt="Logo"
                 className="w-24 h-24 rounded-xl object-cover border-2 border-primary"
               />
               <div className="flex-1 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Nombre de la Empresa</Label>
-                    <Input 
-                      value={empresaConfig?.nombre_empresa || ''} 
-                      onChange={(e) => setEmpresaConfig(prev => prev ? { ...prev, nombre_empresa: e.target.value } : null)}
+                    <Input
+                      value={empresaConfig?.nombre_empresa || ""}
+                      onChange={e =>
+                        setEmpresaConfig(prev =>
+                          prev ? { ...prev, nombre_empresa: e.target.value } : null
+                        )
+                      }
                     />
                   </div>
                   <div className="space-y-2">
                     <Label>RIF / NIT</Label>
-                    <Input 
-                      value={empresaConfig?.rif_nit || ''} 
-                      onChange={(e) => setEmpresaConfig(prev => prev ? { ...prev, rif_nit: e.target.value } : null)}
+                    <Input
+                      value={empresaConfig?.rif_nit || ""}
+                      onChange={e =>
+                        setEmpresaConfig(prev =>
+                          prev ? { ...prev, rif_nit: e.target.value } : null
+                        )
+                      }
                     />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Teléfono</Label>
-                    <Input 
-                      value={empresaConfig?.telefono || ''} 
-                      onChange={(e) => setEmpresaConfig(prev => prev ? { ...prev, telefono: e.target.value } : null)}
+                    <Input
+                      value={empresaConfig?.telefono || ""}
+                      onChange={e =>
+                        setEmpresaConfig(prev =>
+                          prev ? { ...prev, telefono: e.target.value } : null
+                        )
+                      }
                     />
                   </div>
                   <div className="space-y-2">
                     <Label>Email</Label>
-                    <Input 
-                      value={empresaConfig?.email || ''} 
-                      onChange={(e) => setEmpresaConfig(prev => prev ? { ...prev, email: e.target.value } : null)}
+                    <Input
+                      value={empresaConfig?.email || ""}
+                      onChange={e =>
+                        setEmpresaConfig(prev => (prev ? { ...prev, email: e.target.value } : null))
+                      }
                     />
                   </div>
                 </div>
@@ -141,12 +160,16 @@ const Configuracion = () => {
             </div>
             <div className="space-y-2">
               <Label>Dirección</Label>
-              <Input 
-                value={empresaConfig?.direccion || ''} 
-                onChange={(e) => setEmpresaConfig(prev => prev ? { ...prev, direccion: e.target.value } : null)}
+              <Input
+                value={empresaConfig?.direccion || ""}
+                onChange={e =>
+                  setEmpresaConfig(prev => (prev ? { ...prev, direccion: e.target.value } : null))
+                }
               />
             </div>
-            <Button className="mt-4" onClick={handleSaveEmpresa}>Guardar Cambios</Button>
+            <Button className="mt-4" onClick={handleSaveEmpresa}>
+              Guardar Cambios
+            </Button>
           </CardContent>
         </Card>
 
@@ -206,11 +229,15 @@ const Configuracion = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium">Stock bajo</p>
-                <p className="text-sm text-muted-foreground">Alerta cuando el inventario esté bajo</p>
+                <p className="text-sm text-muted-foreground">
+                  Alerta cuando el inventario esté bajo
+                </p>
               </div>
-              <Switch 
-                checked={notificacionesConfig?.stock_bajo || false} 
-                onCheckedChange={(checked) => setNotificacionesConfig(prev => prev ? { ...prev, stock_bajo: checked } : null)}
+              <Switch
+                checked={notificacionesConfig?.stock_bajo || false}
+                onCheckedChange={checked =>
+                  setNotificacionesConfig(prev => (prev ? { ...prev, stock_bajo: checked } : null))
+                }
               />
             </div>
             <Separator />
@@ -219,9 +246,13 @@ const Configuracion = () => {
                 <p className="font-medium">Facturas vencidas</p>
                 <p className="text-sm text-muted-foreground">Recordatorios de cobranza</p>
               </div>
-              <Switch 
-                checked={notificacionesConfig?.facturas_vencidas || false} 
-                onCheckedChange={(checked) => setNotificacionesConfig(prev => prev ? { ...prev, facturas_vencidas: checked } : null)}
+              <Switch
+                checked={notificacionesConfig?.facturas_vencidas || false}
+                onCheckedChange={checked =>
+                  setNotificacionesConfig(prev =>
+                    prev ? { ...prev, facturas_vencidas: checked } : null
+                  )
+                }
               />
             </div>
             <Separator />
@@ -230,12 +261,18 @@ const Configuracion = () => {
                 <p className="font-medium">Nuevas ventas</p>
                 <p className="text-sm text-muted-foreground">Notificar cada nueva venta</p>
               </div>
-              <Switch 
-                checked={notificacionesConfig?.nuevas_ventas || false} 
-                onCheckedChange={(checked) => setNotificacionesConfig(prev => prev ? { ...prev, nuevas_ventas: checked } : null)}
+              <Switch
+                checked={notificacionesConfig?.nuevas_ventas || false}
+                onCheckedChange={checked =>
+                  setNotificacionesConfig(prev =>
+                    prev ? { ...prev, nuevas_ventas: checked } : null
+                  )
+                }
               />
             </div>
-            <Button className="mt-4" onClick={handleSaveNotificaciones}>Guardar Cambios</Button>
+            <Button className="mt-4" onClick={handleSaveNotificaciones}>
+              Guardar Cambios
+            </Button>
           </CardContent>
         </Card>
 
@@ -256,22 +293,28 @@ const Configuracion = () => {
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-muted-foreground">Versión</p>
-                <p className="font-medium">{sistemaConfig?.version || '1.0.0'}</p>
+                <p className="font-medium">{sistemaConfig?.version || "1.0.0"}</p>
               </div>
               <div>
                 <p className="text-muted-foreground">Base de Datos</p>
-                <p className={`font-medium ${sistemaConfig?.db_conectada ? 'text-success' : 'text-warning'}`}>
-                  {sistemaConfig?.db_conectada ? 'Conectada' : 'No conectada'}
+                <p
+                  className={`font-medium ${sistemaConfig?.db_conectada ? "text-success" : "text-warning"}`}
+                >
+                  {sistemaConfig?.db_conectada ? "Conectada" : "No conectada"}
                 </p>
               </div>
               <div>
                 <p className="text-muted-foreground">Última actualización</p>
-                <p className="font-medium">{sistemaConfig?.ultima_actualizacion || new Date().toLocaleDateString()}</p>
+                <p className="font-medium">
+                  {sistemaConfig?.ultima_actualizacion || new Date().toLocaleDateString()}
+                </p>
               </div>
               <div>
                 <p className="text-muted-foreground">Estado</p>
-                <p className={`font-medium ${sistemaConfig?.estado === 'Operativo' ? 'text-success' : 'text-warning'}`}>
-                  {sistemaConfig?.estado || 'Operativo'}
+                <p
+                  className={`font-medium ${sistemaConfig?.estado === "Operativo" ? "text-success" : "text-warning"}`}
+                >
+                  {sistemaConfig?.estado || "Operativo"}
                 </p>
               </div>
             </div>

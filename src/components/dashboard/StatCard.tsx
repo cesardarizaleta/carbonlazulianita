@@ -10,13 +10,13 @@ interface StatCardProps {
   iconColor?: "primary" | "accent" | "success" | "warning";
 }
 
-export function StatCard({ 
-  title, 
-  value, 
-  change, 
-  changeType = "neutral", 
+export function StatCard({
+  title,
+  value,
+  change,
+  changeType = "neutral",
   icon: Icon,
-  iconColor = "primary"
+  iconColor = "primary",
 }: StatCardProps) {
   const iconColorClasses = {
     primary: "bg-primary/10 text-primary",
@@ -38,9 +38,7 @@ export function StatCard({
           <p className="text-sm font-medium text-muted-foreground">{title}</p>
           <p className="text-3xl font-display font-bold text-foreground">{value}</p>
           {change && (
-            <p className={cn("text-sm font-medium", changeClasses[changeType])}>
-              {change}
-            </p>
+            <p className={cn("text-sm font-medium", changeClasses[changeType])}>{change}</p>
           )}
         </div>
         <div className={cn("p-3 rounded-xl", iconColorClasses[iconColor])}>
