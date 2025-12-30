@@ -3,6 +3,7 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { useConfirm } from "@/hooks/useConfirm";
 import {
   Table,
   TableBody,
@@ -44,6 +45,7 @@ const Clientes = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const { confirm, ConfirmDialog } = useConfirm();
 
   useEffect(() => {
     loadClients();
@@ -123,6 +125,12 @@ const Clientes = () => {
   };
 
   const handleDelete = async (id: string) => {
+    const confirmed = await confirm({
+      title: "Eliminar Cliente",
+      description: "¿Estás seguro de que quieres eliminar este cliente? Esta acción no se puede deshacer.",
+    });
+    if (!confirmed) return;
+
     try {
       const response = await clienteService.deleteCliente(id);
       if (response.error) {
@@ -347,6 +355,7 @@ const Clientes = () => {
           </div>
         )}
       </div>
+      {ConfirmDialog}
     </MainLayout>
   );
 };

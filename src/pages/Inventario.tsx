@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { usePriceFormatter } from "@/hooks/usePriceFormatter";
+import { useConfirm } from "@/hooks/useConfirm";
 import {
   Table,
   TableBody,
@@ -37,6 +38,7 @@ const Inventario = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
   const { formatPrice } = usePriceFormatter();
+  const { confirm, ConfirmDialog } = useConfirm();
 
   useEffect(() => {
     checkAuthAndLoadProducts();
@@ -154,6 +156,12 @@ const Inventario = () => {
   };
 
   const handleDelete = async (id: string) => {
+    const confirmed = await confirm({
+      title: "Eliminar Producto",
+      description: "¿Estás seguro de que quieres eliminar este producto? Esta acción no se puede deshacer.",
+    });
+    if (!confirmed) return;
+
     try {
       const response = await inventarioService.deleteProducto(id);
       if (response.error) {
@@ -355,6 +363,7 @@ const Inventario = () => {
           </div>
         )}
       </div>
+      {ConfirmDialog}
     </MainLayout>
   );
 };

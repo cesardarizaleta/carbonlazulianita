@@ -62,7 +62,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         </div>
 
         {/* Mobile header */}
-        <div className="lg:hidden fixed top-0 left-0 right-0 z-20 bg-card border-b border-border p-4 flex items-center justify-between">
+        <div className="lg:hidden fixed top-0 left-0 right-0 z-20 bg-card border-b border-border px-4 h-14 flex items-center justify-between">
           <Button
             variant="ghost"
             size="icon"

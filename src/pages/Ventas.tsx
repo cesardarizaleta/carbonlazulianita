@@ -29,9 +29,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search, Eye, ShoppingCart, Loader2 } from "lucide-react";
-import { ventaService, clienteService } from "@/services";
+import { Plus, Search, Eye, ShoppingCart, Loader2, CheckCircle } from "lucide-react";
+import { ventaService, clienteService, cobranzaService } from "@/services";
 import type { Venta, Cliente } from "@/services";
+import { supabase } from "@/integrations/supabase/client";
+import { useConfirm } from "@/hooks/useConfirm";
 
 interface Sale extends Venta {
   cliente_nombre?: string;
@@ -60,6 +62,7 @@ const Ventas = () => {
 
   const { formatPrice, formatPriceDual } = usePriceFormatter();
   const { convertToUSD, oficialRate } = useDolar();
+  const { confirm, ConfirmDialog } = useConfirm();
 
   useEffect(() => {
     loadSales();
@@ -152,6 +155,59 @@ const Ventas = () => {
       }
     } catch (err) {
       setError("Error al crear venta");
+    }
+  };
+
+  const handleApproveSale = async (sale: Sale) => {
+    const confirmed = await confirm({
+      title: "Confirmar Aprobación",
+      description: "¿Estás seguro de aprobar esta venta? Se generará una cuenta por cobrar.",
+    });
+    if (!confirmed) return;
+
+    try {
+      setLoading(true);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        setError("No se pudo identificar al usuario actual");
+        setLoading(false);
+        return;
+      }
+
+      // 1. Actualizar estado de la venta
+      const updateResponse = await ventaService.updateVenta(sale.id, { estado: "completado" });
+
+      if (updateResponse.error) {
+        setError("Error al actualizar la venta: " + updateResponse.error);
+        setLoading(false);
+        return;
+      }
+
+      // 2. Crear registro de cobranza
+      const cobranzaData = {
+        venta_id: sale.id,
+        monto_pendiente: sale.total,
+        monto_pendiente_bs: sale.total_bs,
+        estado: "pendiente",
+        user_id: user.id,
+      };
+
+      const cobranzaResponse = await cobranzaService.createCobranza(cobranzaData);
+
+      if (cobranzaResponse.error) {
+        setError("Venta actualizada pero error al crear cobranza: " + cobranzaResponse.error);
+      } else {
+        // Actualizar lista local
+        setSales(sales.map(s => (s.id === sale.id ? { ...s, estado: "completado" } : s)));
+      }
+    } catch (err) {
+      setError("Error inesperado al aprobar venta");
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -315,9 +371,22 @@ const Ventas = () => {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="icon">
-                          <Eye className="w-4 h-4" />
-                        </Button>
+                        <div className="flex justify-end gap-2">
+                          {sale.estado === "pendiente" && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                              onClick={() => handleApproveSale(sale)}
+                              title="Aprobar y generar cobranza"
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                            </Button>
+                          )}
+                          <Button variant="ghost" size="icon">
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -327,6 +396,7 @@ const Ventas = () => {
           </div>
         )}
       </div>
+      {ConfirmDialog}
     </MainLayout>
   );
 };
