@@ -9,6 +9,7 @@ export type Database = {
           nombre_producto: string;
           descripcion: string | null;
           precio: number;
+          precio_bs: number;
           stock: number;
           categoria: string | null;
           fecha_creacion: string;
@@ -19,6 +20,7 @@ export type Database = {
           nombre_producto: string;
           descripcion?: string | null;
           precio: number;
+          precio_bs?: number;
           stock: number;
           categoria?: string | null;
           fecha_creacion?: string;
@@ -29,6 +31,7 @@ export type Database = {
           nombre_producto?: string;
           descripcion?: string | null;
           precio?: number;
+          precio_bs?: number;
           stock?: number;
           categoria?: string | null;
           fecha_creacion?: string;
@@ -41,6 +44,8 @@ export type Database = {
           id: string;
           cliente_id: string | null;
           total: number;
+          total_bs: number;
+          tasa_cambio_aplicada: number;
           fecha_venta: string;
           estado: string;
           user_id: string;
@@ -51,6 +56,8 @@ export type Database = {
           id?: string;
           cliente_id?: string | null;
           total: number;
+          total_bs?: number;
+          tasa_cambio_aplicada?: number;
           fecha_venta: string;
           estado: string;
           user_id: string;
@@ -61,6 +68,8 @@ export type Database = {
           id?: string;
           cliente_id?: string | null;
           total?: number;
+          total_bs?: number;
+          tasa_cambio_aplicada?: number;
           fecha_venta?: string;
           estado?: string;
           user_id?: string;

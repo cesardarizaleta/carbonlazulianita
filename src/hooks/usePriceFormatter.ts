@@ -11,12 +11,20 @@ export function usePriceFormatter() {
     return `Bs. ${amount.toFixed(2)}`;
   };
 
+  const formatPriceDual = (amountUSD: number, amountBS: number): string => {
+    if (showInUSD) {
+      return `$${amountUSD.toFixed(2)} USD / Bs. ${amountBS.toFixed(2)}`;
+    }
+    return `Bs. ${amountBS.toFixed(2)} / $${amountUSD.toFixed(2)} USD`;
+  };
+
   const getCurrentRate = (): number | null => {
     return oficialRate;
   };
 
   return {
     formatPrice,
+    formatPriceDual,
     getCurrentRate,
     convertToUSD,
     showInUSD,

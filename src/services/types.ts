@@ -22,7 +22,8 @@ export interface Producto {
   id: string;
   nombre_producto: string;
   descripcion?: string | null;
-  precio: number;
+  precio: number; // Precio en USD
+  precio_bs: number; // Precio en bolívares
   stock: number;
   categoria?: string | null;
   fecha_creacion: string;
@@ -34,7 +35,9 @@ export interface Venta {
   cliente_id?: string;
   cliente?: string; // Nombre del cliente para búsqueda
   fecha_venta: string;
-  total: number;
+  total: number; // Total en USD
+  total_bs: number; // Total en bolívares
+  tasa_cambio_aplicada: number; // Tasa de cambio usada
   estado: string;
   user_id: string;
 }
@@ -44,14 +47,17 @@ export interface VentaItem {
   venta_id: string;
   producto_id?: string;
   cantidad: number;
-  precio_unitario: number;
-  subtotal: number;
+  precio_unitario: number; // Precio unitario en USD
+  precio_unitario_bs: number; // Precio unitario en bolívares
+  subtotal: number; // Subtotal en USD
+  subtotal_bs: number; // Subtotal en bolívares
 }
 
 export interface Cobranza {
   id: string;
   venta_id: string;
-  monto_pendiente: number;
+  monto_pendiente: number; // Monto pendiente en USD
+  monto_pendiente_bs: number; // Monto pendiente en bolívares
   fecha_vencimiento?: string;
   estado: string;
   notas?: string;

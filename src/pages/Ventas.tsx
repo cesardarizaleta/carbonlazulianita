@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { usePriceFormatter } from "@/hooks/usePriceFormatter";
+import { useDolar } from "@/contexts/DolarContext";
 import {
   Table,
   TableBody,
@@ -20,6 +21,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -28,8 +30,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, Search, Eye, ShoppingCart, Loader2 } from "lucide-react";
-import { ventaService } from "@/services";
-import type { Venta } from "@/services";
+import { ventaService, clienteService } from "@/services";
+import type { Venta, Cliente } from "@/services";
 
 interface Sale extends Venta {
   cliente_nombre?: string;
@@ -50,12 +52,35 @@ const Ventas = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterEstado, setFilterEstado] = useState<string>("todos");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [loadingClientes, setLoadingClientes] = useState(false);
+  const [selectedCliente, setSelectedCliente] = useState<string>("");
+  const [total, setTotal] = useState<string>("");
+  const [isInDollars, setIsInDollars] = useState<boolean>(true);
 
-  const { formatPrice } = usePriceFormatter();
+  const { formatPrice, formatPriceDual } = usePriceFormatter();
+  const { convertToUSD, oficialRate } = useDolar();
 
   useEffect(() => {
     loadSales();
+    loadClientes();
   }, []);
+
+  const loadClientes = async () => {
+    try {
+      setLoadingClientes(true);
+      const response = await clienteService.getClientes();
+      if (response.error) {
+        console.error("Error loading clients:", response.error);
+      } else {
+        setClientes(response.data || []);
+      }
+    } catch (err) {
+      console.error("Error loading clients:", err);
+    } finally {
+      setLoadingClientes(false);
+    }
+  };
 
   const loadSales = async () => {
     try {
@@ -83,13 +108,35 @@ const Ventas = () => {
   });
 
   const totalVentas = filteredSales.reduce((acc, sale) => acc + sale.total, 0);
+  const totalVentasBS = filteredSales.reduce((acc, sale) => acc + (sale.total_bs || 0), 0);
+
+  const resetForm = () => {
+    setSelectedCliente("");
+    setTotal("");
+    setIsInDollars(true);
+  };
 
   const handleAddSale = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
+
+    if (!selectedCliente || !total) {
+      setError("Por favor complete todos los campos");
+      return;
+    }
+
+    const numericTotal = Number(total);
+    let totalInUSD: number;
+
+    // Convertir a USD si está en bolívares
+    if (isInDollars) {
+      totalInUSD = numericTotal;
+    } else {
+      totalInUSD = convertToUSD(numericTotal);
+    }
+
     const saleData = {
-      cliente_id: formData.get("cliente") as string,
-      total: Number(formData.get("total")),
+      cliente_id: selectedCliente,
+      total: totalInUSD,
       estado: "pendiente",
     };
 
@@ -101,6 +148,7 @@ const Ventas = () => {
       } else {
         setSales([response.data!, ...sales]);
         setIsDialogOpen(false);
+        resetForm();
       }
     } catch (err) {
       setError("Error al crear venta");
@@ -116,7 +164,15 @@ const Ventas = () => {
             <h1 className="text-3xl font-display font-bold text-foreground">Ventas</h1>
             <p className="text-muted-foreground">Gestión de pedidos y transacciones</p>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog
+            open={isDialogOpen}
+            onOpenChange={(open) => {
+              setIsDialogOpen(open);
+              if (!open) {
+                resetForm();
+              }
+            }}
+          >
             <DialogTrigger asChild>
               <Button className="gap-2">
                 <Plus className="w-4 h-4" />
@@ -129,12 +185,49 @@ const Ventas = () => {
               </DialogHeader>
               <form onSubmit={handleAddSale} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="cliente">Cliente ID</Label>
-                  <Input id="cliente" name="cliente" placeholder="ID del cliente" required />
+                  <Label htmlFor="cliente">Cliente</Label>
+                  <Select value={selectedCliente} onValueChange={setSelectedCliente} required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar cliente..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clientes.map((cliente) => (
+                        <SelectItem key={cliente.id} value={cliente.id}>
+                          {cliente.nombre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="total">Total ($)</Label>
-                  <Input id="total" name="total" type="number" step="0.01" required />
+                  <Label htmlFor="total">Total ({isInDollars ? "USD" : "BS"})</Label>
+                  <Input
+                    id="total"
+                    value={total}
+                    onChange={(e) => setTotal(e.target.value)}
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    required
+                  />
+                  {total && oficialRate && (
+                    <p className="text-sm text-muted-foreground">
+                      Equivalente: {isInDollars 
+                        ? `Bs. ${(Number(total) * oficialRate).toFixed(2)}`
+                        : `$${(Number(total) / oficialRate).toFixed(2)} USD`
+                      }
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="currency-mode"
+                    checked={isInDollars}
+                    onCheckedChange={setIsInDollars}
+                  />
+                  <Label htmlFor="currency-mode" className="text-sm">
+                    Registrar en {isInDollars ? "dólares" : "bolívares"}
+                  </Label>
                 </div>
                 <Button type="submit" className="w-full">
                   Registrar Venta
@@ -170,7 +263,7 @@ const Ventas = () => {
           </Select>
           <Badge variant="outline" className="px-4 py-2 h-10 flex items-center">
             <ShoppingCart className="w-4 h-4 mr-2" />
-            Total: {formatPrice(totalVentas)}
+            Total: {formatPriceDual(totalVentas, totalVentasBS)}
           </Badge>
         </div>
 
@@ -213,9 +306,9 @@ const Ventas = () => {
                       <TableCell className="font-mono text-sm">{sale.id}</TableCell>
                       <TableCell>{new Date(sale.fecha_venta).toLocaleDateString()}</TableCell>
                       <TableCell className="font-medium">
-                        {sale.cliente_nombre || sale.cliente_id || "N/A"}
+                        {sale.cliente || "N/A"}
                       </TableCell>
-                      <TableCell className="font-semibold">{formatPrice(sale.total)}</TableCell>
+                      <TableCell className="font-semibold">{formatPriceDual(sale.total, sale.total_bs)}</TableCell>
                       <TableCell>
                         <Badge variant={estadoBadgeVariant[sale.estado] || "secondary"}>
                           {sale.estado}

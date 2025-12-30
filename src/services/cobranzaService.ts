@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Cobranza, ApiResponse, PaginatedResponse } from "./types";
+import { dolarService } from "./dolarService";
 
 class CobranzaService {
   // Obtener todas las cobranzas (con paginación)
@@ -46,9 +47,20 @@ class CobranzaService {
   // Crear cobranza
   async createCobranza(cobranzaData: Omit<Cobranza, "id">): Promise<ApiResponse<Cobranza>> {
     try {
+      // Obtener la tasa de cambio actual
+      const dolarResponse = await dolarService.getDolarRates();
+      const tasaActual = dolarResponse.data ? 
+        dolarService.getOficialRate(dolarResponse.data) : 298.14;
+
+      // Calcular monto pendiente en bolívares
+      const cobranzaDataConBS = {
+        ...cobranzaData,
+        monto_pendiente_bs: cobranzaData.monto_pendiente * tasaActual,
+      };
+
       const { data, error } = await supabase
         .from("cobranza")
-        .insert([cobranzaData])
+        .insert([cobranzaDataConBS])
         .select()
         .single();
 

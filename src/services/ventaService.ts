@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Venta, VentaItem, ApiResponse, PaginatedResponse } from "./types";
+import { dolarService } from "./dolarService";
 
 class VentaService {
   // Obtener todas las ventas (con paginación)
@@ -90,10 +91,29 @@ class VentaService {
     items: Omit<VentaItem, "id" | "venta_id">[]
   ): Promise<ApiResponse<Venta>> {
     try {
+      // Obtener la tasa de cambio actual
+      const dolarResponse = await dolarService.getDolarRates();
+      const tasaActual = dolarResponse.data ? 
+        dolarService.getOficialRate(dolarResponse.data) : 298.14; // fallback a 298.14
+
+      // Calcular montos en bolívares
+      const ventaDataConBS = {
+        ...ventaData,
+        total_bs: ventaData.total * tasaActual,
+        tasa_cambio_aplicada: tasaActual,
+      };
+
+      // Preparar items con montos en bolívares
+      const itemsConBS = items.map(item => ({
+        ...item,
+        precio_unitario_bs: item.precio_unitario * tasaActual,
+        subtotal_bs: item.subtotal * tasaActual,
+      }));
+
       // Crear la venta
       const { data: venta, error: ventaError } = await supabase
         .from("ventas")
-        .insert([ventaData])
+        .insert([ventaDataConBS])
         .select(
           `
           *,
@@ -109,8 +129,8 @@ class VentaService {
       }
 
       // Crear los items de la venta
-      if (items.length > 0) {
-        const itemsWithVentaId = items.map(item => ({
+      if (itemsConBS.length > 0) {
+        const itemsWithVentaId = itemsConBS.map(item => ({
           ...item,
           venta_id: venta.id,
         }));

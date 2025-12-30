@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Producto, ApiResponse, PaginatedResponse } from "./types";
+import { dolarService } from "./dolarService";
 
 class InventarioService {
   // Obtener todos los productos (con paginación)
@@ -50,9 +51,20 @@ class InventarioService {
   // Crear producto
   async createProducto(productoData: Omit<Producto, "id">): Promise<ApiResponse<Producto>> {
     try {
+      // Obtener la tasa de cambio actual
+      const dolarResponse = await dolarService.getDolarRates();
+      const tasaActual = dolarResponse.data ? 
+        dolarService.getOficialRate(dolarResponse.data) : 298.14; // fallback
+
+      // Calcular precio en bolívares
+      const productoDataConBS = {
+        ...productoData,
+        precio_bs: productoData.precio * tasaActual,
+      };
+
       const { data, error } = await supabase
         .from("inventario")
-        .insert([productoData])
+        .insert([productoDataConBS])
         .select()
         .single();
 
@@ -71,9 +83,19 @@ class InventarioService {
   // Actualizar producto
   async updateProducto(id: string, updates: Partial<Producto>): Promise<ApiResponse<Producto>> {
     try {
+      let updatesConBS = { ...updates };
+
+      // Si se está actualizando el precio en USD, recalcular el precio en BS
+      if (updates.precio !== undefined) {
+        const dolarResponse = await dolarService.getDolarRates();
+        const tasaActual = dolarResponse.data ? 
+          dolarService.getOficialRate(dolarResponse.data) : 298.14;
+        updatesConBS.precio_bs = updates.precio * tasaActual;
+      }
+
       const { data, error } = await supabase
         .from("inventario")
-        .update(updates)
+        .update(updatesConBS)
         .eq("id", id)
         .select()
         .single();
