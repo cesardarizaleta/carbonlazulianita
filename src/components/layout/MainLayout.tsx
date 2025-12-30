@@ -1,6 +1,7 @@
 import { ReactNode, useState, useEffect } from "react";
 import { Sidebar } from "./Sidebar";
 import { DolarDisplay } from "@/components/DolarDisplay";
+import { QuickAccess } from "@/components/QuickAccess";
 import { cn } from "@/lib/utils";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -77,6 +78,8 @@ export function MainLayout({ children }: MainLayoutProps) {
 
         <div className="p-4 pt-16 lg:p-8 lg:pt-20">{children}</div>
       </main>
+
+      <QuickAccess />
     </div>
   );
 }
