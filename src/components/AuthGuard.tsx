@@ -1,7 +1,8 @@
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface AuthGuardProps {
   children: ReactNode;
@@ -10,8 +11,8 @@ interface AuthGuardProps {
 }
 
 export function AuthGuard({ children, requireAuth = true, redirectTo = "/login" }: AuthGuardProps) {
-  const { user, loading } = useAuth();
   const location = useLocation();
+  const { user, loading } = useAuth();
 
   // Mostrar loading mientras se verifica la autenticación
   if (loading) {

@@ -23,7 +23,7 @@ export const VALIDATION = {
   // Patrones de validación
   PATTERNS: {
     EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-    PHONE: /^[\+]?[0-9\s\-\(\)]{7,20}$/,
+    PHONE: /^[+]?[0-9\s\-()]{7,20}$/,
     PRICE: /^\d+(\.\d{1,2})?$/,
     WEIGHT: /^\d+(\.\d{1,2})?$/,
   },

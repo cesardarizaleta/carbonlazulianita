@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useMemo, memo } from "react";
 import {
   AreaChart,
   Area,
@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { APP_CONFIG } from "@/constants";
-import { ventaService, cobranzaService } from "@/services";
+import { useVentasChart } from "@/hooks/useQueries";
 
 interface ChartData {
   mes: string;
@@ -17,70 +17,50 @@ interface ChartData {
   cobranza: number;
 }
 
-export function SalesChart() {
-  const [data, setData] = useState<ChartData[]>([]);
-  const [loading, setLoading] = useState(true);
+export const SalesChart = memo(function SalesChart() {
+  const { data: chartData, isLoading } = useVentasChart();
 
-  useEffect(() => {
-    loadChartData();
-  }, []);
+  const processedData = useMemo((): ChartData[] => {
+    if (!chartData?.ventas.data && !chartData?.cobranzas.data) return [];
 
-  const loadChartData = async () => {
-    try {
-      setLoading(true);
+    // Group sales by month
+    const salesByMonth = new Map<string, number>();
+    const cobranzaByMonth = new Map<string, number>();
 
-      // Get sales data for the last 6 months
-      const salesResponse = await ventaService.getVentas(1, 1000);
-      const cobranzaResponse = await cobranzaService.getCobranzas(1, 1000);
+    // Process sales
+    chartData.ventas.data?.forEach(venta => {
+      const date = new Date(venta.fecha_venta);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      salesByMonth.set(monthKey, (salesByMonth.get(monthKey) || 0) + venta.total);
+    });
 
-      if (salesResponse.error || cobranzaResponse.error) {
-        console.error("Error loading chart data");
-        return;
-      }
+    // Process cobranza
+    chartData.cobranzas.data?.forEach(cob => {
+      const date = new Date(cob.fecha_cobranza);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      cobranzaByMonth.set(monthKey, (cobranzaByMonth.get(monthKey) || 0) + cob.monto_pagado);
+    });
 
-      // Group sales by month
-      const salesByMonth = new Map<string, number>();
-      const cobranzaByMonth = new Map<string, number>();
+    // Generate last 6 months
+    const chartDataArray: ChartData[] = [];
+    const now = new Date();
 
-      // Process sales
-      salesResponse.data?.forEach(venta => {
-        const date = new Date(venta.fecha_venta);
-        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-        salesByMonth.set(monthKey, (salesByMonth.get(monthKey) || 0) + venta.total);
+    for (let i = APP_CONFIG.DASHBOARD.CHART_MONTHS - 1; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      const monthName = date.toLocaleDateString("es-ES", { month: "short" });
+
+      chartDataArray.push({
+        mes: monthName,
+        ventas: salesByMonth.get(monthKey) || 0,
+        cobranza: cobranzaByMonth.get(monthKey) || 0,
       });
-
-      // Process cobranza
-      cobranzaResponse.data?.forEach(cob => {
-        const date = new Date(cob.fecha_cobranza);
-        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-        cobranzaByMonth.set(monthKey, (cobranzaByMonth.get(monthKey) || 0) + cob.monto_pagado);
-      });
-
-      // Generate last 6 months
-      const chartData: ChartData[] = [];
-      const now = new Date();
-
-      for (let i = APP_CONFIG.DASHBOARD.CHART_MONTHS - 1; i >= 0; i--) {
-        const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-        const monthName = date.toLocaleDateString("es-ES", { month: "short" });
-
-        chartData.push({
-          mes: monthName,
-          ventas: salesByMonth.get(monthKey) || 0,
-          cobranza: cobranzaByMonth.get(monthKey) || 0,
-        });
-      }
-
-      setData(chartData);
-    } catch (error) {
-      console.error("Error loading chart data:", error);
-    } finally {
-      setLoading(false);
     }
-  };
 
-  if (loading) {
+    return chartDataArray;
+  }, [chartData]);
+
+  if (isLoading) {
     return (
       <div className="bg-card rounded-xl border border-border shadow-sm p-6 animate-slide-up">
         <div className="mb-6">
@@ -102,7 +82,7 @@ export function SalesChart() {
       </div>
       <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+          <AreaChart data={processedData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="colorVentas" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="hsl(50, 100%, 50%)" stopOpacity={0.8} />
@@ -171,4 +151,4 @@ export function SalesChart() {
       </div>
     </div>
   );
-}
+});

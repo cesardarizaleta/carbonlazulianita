@@ -125,7 +125,7 @@ class InventarioService {
   // Actualizar producto
   async updateProducto(id: string, updates: Partial<Producto>): Promise<ApiResponse<Producto>> {
     try {
-      let updatesConBS = { ...updates };
+      const updatesConBS = { ...updates };
 
       // Si se está actualizando el precio en USD, recalcular el precio en BS
       if (updates.precio !== undefined) {

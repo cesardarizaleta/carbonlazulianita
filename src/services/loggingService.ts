@@ -81,7 +81,7 @@ class LoggingService {
     operation: LogEntry["operation"],
     errorMessage: string,
     queryText?: string,
-    metadata?: Record<string, any>
+    metadata?: Record<string, unknown>
   ): Promise<void> {
     try {
       const {
@@ -113,7 +113,10 @@ class LoggingService {
   }
 
   // Logging de eventos de autenticación
-  async logAuthEvent(operation: "LOGIN" | "LOGOUT", metadata?: Record<string, any>): Promise<void> {
+  async logAuthEvent(
+    operation: "LOGIN" | "LOGOUT",
+    metadata?: Record<string, unknown>
+  ): Promise<void> {
     try {
       const {
         data: { user },
@@ -177,7 +180,7 @@ class LoggingService {
   }
 
   // Obtener estadísticas de logs
-  async getLogStatistics(days: number = 30): Promise<any[]> {
+  async getLogStatistics(days: number = 30): Promise<unknown[]> {
     try {
       const { data, error } = await supabase.rpc("get_log_statistics", {
         p_days: days,
@@ -196,7 +199,7 @@ class LoggingService {
   }
 
   // Obtener logs recientes
-  async getRecentLogs(limit: number = 50): Promise<any[]> {
+  async getRecentLogs(limit: number = 50): Promise<LogEntry[]> {
     try {
       const { data, error } = await supabase
         .from("recent_logs")
@@ -217,7 +220,10 @@ class LoggingService {
   }
 
   // Obtener logs con paginación
-  async getLogs(page: number = 1, pageSize: number = 20): Promise<{ data: any[]; count: number }> {
+  async getLogs(
+    page: number = 1,
+    pageSize: number = 20
+  ): Promise<{ data: LogEntry[]; count: number }> {
     try {
       const from = (page - 1) * pageSize;
       const to = from + pageSize - 1;
@@ -276,10 +282,10 @@ export const logError = (
   operation: LogEntry["operation"],
   errorMessage: string,
   queryText?: string,
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 ) => loggingService.logError(tableName, operation, errorMessage, queryText, metadata);
 
-export const logAuthEvent = (operation: "LOGIN" | "LOGOUT", metadata?: Record<string, any>) =>
+export const logAuthEvent = (operation: "LOGIN" | "LOGOUT", metadata?: Record<string, unknown>) =>
   loggingService.logAuthEvent(operation, metadata);
 
 export const measureExecutionTime = <T>(

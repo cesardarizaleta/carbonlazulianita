@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useMemo, memo } from "react";
 import {
   Table,
   TableBody,
@@ -8,62 +8,47 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { BADGE_VARIANTS } from "@/constants";
-import { ventaService, clienteService } from "@/services";
-import type { Venta, Cliente } from "@/services";
+import { BADGE_VARIANTS, APP_CONFIG } from "@/constants";
+import { useVentasRecent, useClientesMap } from "@/hooks/useQueries";
+import type { RecentSale } from "@/services";
 
-export function RecentSalesTable() {
-  const [recentSales, setRecentSales] = useState<RecentSale[]>([]);
-  const [loading, setLoading] = useState(true);
+export const RecentSalesTable = memo(function RecentSalesTable() {
+  const { data: ventasData, isLoading: ventasLoading } = useVentasRecent(
+    APP_CONFIG.DASHBOARD.RECENT_SALES_LIMIT
+  );
+  const { data: clientesMap, isLoading: clientesLoading } = useClientesMap();
 
-  useEffect(() => {
-    loadRecentSales();
-  }, []);
+  const recentSales = useMemo((): RecentSale[] => {
+    if (!ventasData?.data || !clientesMap) return [];
 
-  const loadRecentSales = async () => {
-    try {
-      setLoading(true);
+    return ventasData.data.map(venta => ({
+      id: venta.id ? `VTA-${String(venta.id).slice(-3)}` : "VTA-???",
+      cliente: venta.cliente_id
+        ? clientesMap.get(venta.cliente_id) || "Cliente desconocido"
+        : "Sin cliente",
+      producto: "Múltiples productos", // We don't have product details in venta summary
+      cantidad: "N/A", // We don't have quantity in venta summary
+      total: `$${venta.total.toLocaleString()}`,
+      estado: venta.estado,
+    }));
+  }, [ventasData?.data, clientesMap]);
 
-      // Get recent sales
-      const salesResponse = await ventaService.getVentas(
-        1,
-        APP_CONFIG.DASHBOARD.RECENT_SALES_LIMIT
-      );
-      const clientesResponse = await clienteService.getClientes(1, 100);
+  if (ventasLoading || clientesLoading) {
+    return (
+      <div className="bg-card rounded-xl border border-border shadow-sm p-6 animate-slide-up">
+        <div className="mb-6">
+          <h3 className="text-lg font-display font-semibold text-foreground">Ventas Recientes</h3>
+        </div>
+        <div className="space-y-4">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="h-12 bg-muted animate-pulse rounded" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
-      if (salesResponse.error || clientesResponse.error) {
-        console.error("Error loading recent sales");
-        return;
-      }
-
-      // Create client map
-      const clientesMap = new Map<string, string>();
-      clientesResponse.data?.forEach(cliente => {
-        clientesMap.set(cliente.id, cliente.nombre);
-      });
-
-      // Process sales data
-      const sales: RecentSale[] =
-        salesResponse.data?.map(venta => ({
-          id: `VTA-${venta.id.slice(-3)}`,
-          cliente: venta.cliente_id
-            ? clientesMap.get(venta.cliente_id) || "Cliente desconocido"
-            : "Sin cliente",
-          producto: "Múltiples productos", // We don't have product details in venta summary
-          cantidad: "N/A", // We don't have quantity in venta summary
-          total: `$${venta.total.toLocaleString()}`,
-          estado: venta.estado,
-        })) || [];
-
-      setRecentSales(sales);
-    } catch (error) {
-      console.error("Error loading recent sales:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
+  if (ventasLoading || clientesLoading) {
     return (
       <div className="bg-card rounded-xl border border-border shadow-sm p-6 animate-slide-up">
         <div className="mb-6">
@@ -129,4 +114,4 @@ export function RecentSalesTable() {
       </div>
     </div>
   );
-}
+});

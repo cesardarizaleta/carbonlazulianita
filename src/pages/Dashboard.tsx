@@ -1,76 +1,70 @@
-import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { RecentSalesTable } from "@/components/dashboard/RecentSalesTable";
 import { SalesChart } from "@/components/dashboard/SalesChart";
 import { InventoryStatus } from "@/components/dashboard/InventoryStatus";
-import { DollarSign, Package, ShoppingCart, AlertCircle, Loader2 } from "lucide-react";
-import { APP_CONFIG } from "@/constants";
-import { ventaService, inventarioService, cobranzaService } from "@/services";
+import { DollarSign, Package, ShoppingCart, AlertCircle, Loader2, RefreshCw } from "lucide-react";
+import { useDashboardData } from "@/hooks/useQueries";
+import { Button } from "@/components/ui/button";
 
 const Dashboard = () => {
-  const [stats, setStats] = useState({
-    ventasMes: 0,
-    inventarioTotal: 0,
-    pedidosPendientes: 0,
-    cuentasPorCobrar: 0,
-  });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { isLoading, isError, stats, refetchAll } = useDashboardData();
 
-  useEffect(() => {
-    loadDashboardData();
-  }, []);
+  if (isLoading) {
+    return (
+      <MainLayout>
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+            <p className="text-muted-foreground">Cargando datos del dashboard...</p>
+          </div>
 
-  const loadDashboardData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="bg-card rounded-xl border border-border shadow-sm p-6 animate-pulse"
+              >
+                <div className="h-20" />
+              </div>
+            ))}
+          </div>
 
-      // Get current month sales
-      const salesResponse = await ventaService.getVentas(1, 1000);
-      const currentMonth = new Date().getMonth();
-      const currentYear = new Date().getFullYear();
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={i}
+                className="bg-card rounded-xl border border-border shadow-sm p-6 animate-pulse"
+              >
+                <div className="h-80" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
-      const ventasMes =
-        salesResponse.data
-          ?.filter(venta => {
-            const ventaDate = new Date(venta.fecha_venta);
-            return ventaDate.getMonth() === currentMonth && ventaDate.getFullYear() === currentYear;
-          })
-          .reduce((acc, venta) => acc + venta.total, 0) || 0;
+  if (isError) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Error al cargar datos</h2>
+            <p className="text-muted-foreground mb-4">
+              No se pudieron cargar los datos del dashboard.
+            </p>
+            <Button onClick={refetchAll} variant="outline">
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Reintentar
+            </Button>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
-      // Load inventory data
-      const inventoryResponse = await inventarioService.getProductos(1, 1000);
-      const inventarioTotal =
-        inventoryResponse.data?.reduce((acc, item) => acc + item.stock * (item.peso || 0), 0) || 0;
-
-      // Calculate inventory capacity (assuming 150% of current stock as capacity)
-      const inventarioCapacidad = Math.max(
-        inventarioTotal * APP_CONFIG.INVENTORY.CAPACITY_MULTIPLIER,
-        APP_CONFIG.INVENTORY.MIN_CAPACITY_KG
-      ); // Minimum 50,000kg capacity
-      const inventarioPercentage = (inventarioTotal / inventarioCapacidad) * 100;
-
-      // Load pending collections
-      const cobranzaResponse = await cobranzaService.getCobranzas(1, 1000);
-      const cuentasPorCobrar =
-        cobranzaResponse.data?.reduce((acc, cob) => acc + cob.monto_pendiente, 0) || 0;
-      const pedidosPendientes =
-        cobranzaResponse.data?.filter(cob => cob.estado !== "pagado").length || 0;
-
-      setStats({
-        ventasMes,
-        inventarioTotal,
-        pedidosPendientes,
-        cuentasPorCobrar,
-      });
-    } catch (err) {
-      setError("Error al cargar datos del dashboard");
-    } finally {
-      setLoading(false);
-    }
-  };
   return (
     <MainLayout>
       <div className="space-y-8">
@@ -90,68 +84,54 @@ const Dashboard = () => {
           </p>
         </div>
 
-        {/* Loading */}
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-            <span className="ml-2 text-muted-foreground">Cargando dashboard...</span>
-          </div>
-        ) : error ? (
-          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
-            <p className="text-destructive text-sm">{error}</p>
-          </div>
-        ) : (
-          <>
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <StatCard
-                title="Ventas del Mes"
-                value={`$${stats.ventasMes.toLocaleString()}`}
-                change="+12.5% vs mes anterior"
-                changeType="positive"
-                icon={DollarSign}
-                iconColor="primary"
-              />
-              <StatCard
-                title="Inventario Total"
-                value={`${stats.inventarioTotal.toLocaleString()} kg`}
-                change={`${Math.round((stats.inventarioTotal / Math.max(stats.inventarioTotal * 1.5, 50000)) * 100)}% capacidad`}
-                changeType="neutral"
-                icon={Package}
-                iconColor="success"
-              />
-              <StatCard
-                title="Pedidos Pendientes"
-                value={stats.pedidosPendientes.toString()}
-                change="5 urgentes"
-                changeType="negative"
-                icon={ShoppingCart}
-                iconColor="warning"
-              />
-              <StatCard
-                title="Cuentas por Cobrar"
-                value={`$${stats.cuentasPorCobrar.toLocaleString()}`}
-                change="8 facturas vencidas"
-                changeType="negative"
-                icon={AlertCircle}
-                iconColor="accent"
-              />
-            </div>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <StatCard
+            title="Ventas del Mes"
+            value={`$${stats.ventasMes.toLocaleString()}`}
+            change="+12.5% vs mes anterior"
+            changeType="positive"
+            icon={DollarSign}
+            iconColor="primary"
+          />
+          <StatCard
+            title="Inventario Total"
+            value={`${stats.inventarioTotal.toLocaleString()} kg`}
+            change={`${Math.round((stats.inventarioTotal / Math.max(stats.inventarioTotal * 1.5, 50000)) * 100)}% capacidad`}
+            changeType="neutral"
+            icon={Package}
+            iconColor="success"
+          />
+          <StatCard
+            title="Pedidos Pendientes"
+            value={stats.pedidosPendientes.toString()}
+            change="5 urgentes"
+            changeType="negative"
+            icon={ShoppingCart}
+            iconColor="warning"
+          />
+          <StatCard
+            title="Cuentas por Cobrar"
+            value={`$0`} // Placeholder - implementar lógica después
+            change="8 facturas vencidas"
+            changeType="negative"
+            icon={AlertCircle}
+            iconColor="accent"
+          />
+        </div>
 
-            {/* Charts Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
-                <SalesChart />
-              </div>
-              <div>
-                <InventoryStatus />
-              </div>
-            </div>
+        {/* Charts Row */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <SalesChart />
+          </div>
+          <div>
+            <InventoryStatus />
+          </div>
+        </div>
 
-            {/* Recent Sales */}
-            <RecentSalesTable />
-          </>
-        )}
+        {/* Recent Sales Table */}
+        <RecentSalesTable />
       </div>
     </MainLayout>
   );

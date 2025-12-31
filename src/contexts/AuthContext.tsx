@@ -162,6 +162,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
+    // In development, return a safe fallback instead of throwing
+    if (process.env.NODE_ENV === "development") {
+      console.warn("useAuth: AuthContext is undefined. This may cause issues.");
+      return {
+        user: null,
+        loading: true,
+        login: async () => {},
+        logout: async () => {},
+        register: async () => {},
+      };
+    }
     throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;

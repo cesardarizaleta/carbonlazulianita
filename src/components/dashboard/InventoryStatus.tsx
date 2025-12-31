@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useMemo, memo } from "react";
 import { Progress } from "@/components/ui/progress";
 import { APP_CONFIG } from "@/constants";
-import { inventarioService } from "@/services";
+import { useInventarioStatus } from "@/hooks/useQueries";
 import type { Producto } from "@/services";
 
 interface InventoryItem {
@@ -11,63 +11,42 @@ interface InventoryItem {
   unidad: string;
 }
 
-export function InventoryStatus() {
-  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
-  const [loading, setLoading] = useState(true);
+export const InventoryStatus = memo(function InventoryStatus() {
+  const { data: productosData, isLoading } = useInventarioStatus();
 
-  useEffect(() => {
-    loadInventoryData();
-  }, []);
+  const inventoryItems = useMemo((): InventoryItem[] => {
+    if (!productosData?.data) return [];
 
-  const loadInventoryData = async () => {
-    try {
-      setLoading(true);
-      const response = await inventarioService.getProductos(1, 100);
+    // Group products by category and calculate totals
+    const categoryTotals = new Map<string, { stock: number; productos: Producto[] }>();
 
-      if (response.error) {
-        console.error("Error loading inventory data");
-        return;
+    productosData.data.forEach(producto => {
+      const category = producto.categoria || "Sin categoría";
+      if (!categoryTotals.has(category)) {
+        categoryTotals.set(category, { stock: 0, productos: [] });
       }
+      const categoryData = categoryTotals.get(category)!;
+      categoryData.stock += producto.stock * (producto.peso || 0);
+      categoryData.productos.push(producto);
+    });
 
-      // Group products by category and calculate totals
-      const categoryTotals = new Map<string, { stock: number; productos: Producto[] }>();
+    // Convert to inventory items with estimated capacity
+    const sortedItems = Array.from(categoryTotals.entries())
+      .map(([category, data]) => {
+        const capacidad = Math.max(data.stock * 2, APP_CONFIG.INVENTORY.MIN_CAPACITY_KG / 10);
+        return {
+          nombre: category,
+          stock: data.stock,
+          capacidad,
+          unidad: "kg",
+        };
+      })
+      .sort((a, b) => a.stock / a.capacidad - b.stock / b.capacidad);
 
-      response.data?.forEach(producto => {
-        const category = producto.categoria || "Sin categoría";
-        if (!categoryTotals.has(category)) {
-          categoryTotals.set(category, { stock: 0, productos: [] });
-        }
-        const categoryData = categoryTotals.get(category)!;
-        categoryData.stock += producto.stock * (producto.peso || 0);
-        categoryData.productos.push(producto);
-      });
+    return sortedItems.slice(0, APP_CONFIG.DASHBOARD.INVENTORY_CATEGORIES_LIMIT);
+  }, [productosData?.data]);
 
-      // Convert to inventory items with estimated capacity
-      const items: InventoryItem[] = Array.from(categoryTotals.entries()).map(
-        ([category, data]) => {
-          // Estimate capacity as 2x current stock for display purposes
-          const capacidad = Math.max(data.stock * 2, APP_CONFIG.INVENTORY.MIN_CAPACITY_KG / 10); // Minimum 5,000kg per category
-          return {
-            nombre: category,
-            stock: data.stock,
-            capacidad,
-            unidad: "kg",
-          };
-        }
-      );
-
-      // Sort by stock level (lowest first)
-      items.sort((a, b) => a.stock / a.capacidad - b.stock / b.capacidad);
-
-      setInventoryItems(items.slice(0, APP_CONFIG.DASHBOARD.INVENTORY_CATEGORIES_LIMIT)); // Show top categories
-    } catch (error) {
-      console.error("Error loading inventory data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="bg-card rounded-xl border border-border shadow-sm p-6 animate-slide-up">
         <div className="mb-6">
@@ -115,4 +94,4 @@ export function InventoryStatus() {
       </div>
     </div>
   );
-}
+});
