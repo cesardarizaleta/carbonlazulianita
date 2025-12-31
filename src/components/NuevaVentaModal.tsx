@@ -44,11 +44,11 @@ export function NuevaVentaModal({ open, onOpenChange }: NuevaVentaModalProps) {
   const loadData = async () => {
     try {
       const [clientesData, productosData] = await Promise.all([
-        clienteService.getAll(),
-        inventarioService.getAll(),
+        clienteService.getClientes(1, 1000),
+        inventarioService.getProductos(1, 1000),
       ]);
-      setClientes(clientesData);
-      setProductos(productosData);
+      setClientes(clientesData.data || []);
+      setProductos(productosData.data || []);
     } catch (error) {
       console.error("Error loading data:", error);
     }

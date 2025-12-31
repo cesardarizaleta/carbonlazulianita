@@ -64,10 +64,10 @@ export function QuickAccess() {
           onClick={toggleMenu}
         >
           <span
-            className={`material-symbols-rounded transition-transform duration-300 ${isMenuOpen ? "rotate-45" : ""}`}
+            className={`material-symbols-rounded transition-transform duration-300 ${!isMenuOpen ? "rotate-45" : ""}`}
             style={{ fontSize: "36px" }}
           >
-            {isMenuOpen ? "close" : "add"}
+            close
           </span>
         </Button>
       </div>
