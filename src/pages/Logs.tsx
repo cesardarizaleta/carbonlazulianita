@@ -35,6 +35,7 @@ import {
 import { MODULE_CONFIG } from "@/constants";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
+import { loggingService } from "@/services";
 
 interface LogEntry {
   id: string;
