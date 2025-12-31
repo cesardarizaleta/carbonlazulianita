@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, Search, CheckCircle, AlertCircle, Clock, DollarSign, Loader2 } from "lucide-react";
+import { BADGE_VARIANTS, MODULE_CONFIG } from "@/constants";
 import { cobranzaService } from "@/services";
 import type { Cobranza } from "@/services";
 
@@ -40,13 +41,6 @@ interface Invoice extends Cobranza {
   notas?: string;
   user_id: string;
 }
-
-const estadoBadgeVariant = {
-  pagado: "default",
-  pendiente: "secondary",
-  parcial: "outline",
-  vencido: "destructive",
-} as const;
 
 const estadoIcon = {
   pagado: CheckCircle,
@@ -65,7 +59,7 @@ const Cobranza = () => {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const pageSize = 10;
+  const pageSize = MODULE_CONFIG.cobranza.pageSize;
 
   useEffect(() => {
     loadInvoices();
@@ -279,7 +273,11 @@ const Cobranza = () => {
                         </TableCell>
                         <TableCell>
                           <Badge
-                            variant={estadoBadgeVariant[invoice.estado] || "secondary"}
+                            variant={
+                              BADGE_VARIANTS.estadoBadgeVariant[
+                                invoice.estado as keyof typeof BADGE_VARIANTS.estadoBadgeVariant
+                              ] || "secondary"
+                            }
                             className="gap-1"
                           >
                             <Icon className="w-3 h-3" />

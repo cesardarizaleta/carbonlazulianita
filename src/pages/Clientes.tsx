@@ -25,7 +25,10 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Plus, Search, Edit, Trash2, Users, Phone, Mail, MapPin, Loader2 } from "lucide-react";
 import { clienteService } from "@/services";
+import { supabase } from "@/integrations/supabase/client";
 import type { Cliente } from "@/services";
+
+import { BADGE_VARIANTS, MODULE_CONFIG } from "@/constants";
 
 interface Client extends Cliente {
   tipo?: "regular" | "mayorista" | "vip";
@@ -48,7 +51,7 @@ const Clientes = () => {
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const pageSize = 10;
+  const pageSize = MODULE_CONFIG.clientes.pageSize;
   const { confirm, ConfirmDialog } = useConfirm();
 
   useEffect(() => {
@@ -88,11 +91,23 @@ const Clientes = () => {
   const handleAddClient = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
+
+    // Obtener el usuario actual
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session?.user) {
+      setError("Debes iniciar sesión para crear clientes");
+      return;
+    }
+
     const clientData = {
       nombre: formData.get("nombre") as string,
       email: formData.get("email") as string,
       telefono: formData.get("telefono") as string,
       direccion: formData.get("direccion") as string,
+      fecha_creacion: new Date().toISOString(),
+      user_id: session.user.id,
     };
 
     try {

@@ -32,7 +32,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { loggingService } from "@/services";
+import { MODULE_CONFIG } from "@/constants";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -81,7 +81,7 @@ export default function LogsPage() {
   const [timeRange, setTimeRange] = useState<number>(7); // días
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const pageSize = 20;
+  const pageSize = MODULE_CONFIG.logs.pageSize;
 
   const loadLogs = async () => {
     setLoading(true);

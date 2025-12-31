@@ -37,17 +37,11 @@ import type { Venta, Cliente, Producto, VentaItem } from "@/services";
 import { supabase } from "@/integrations/supabase/client";
 import { useConfirm } from "@/hooks/useConfirm";
 
+import { BADGE_VARIANTS, MODULE_CONFIG } from "@/constants";
+
 interface Sale extends Venta {
   cliente_nombre?: string;
 }
-
-const estadoBadgeVariant = {
-  completado: "default",
-  pendiente: "secondary",
-  procesando: "outline",
-  enviado: "outline",
-  cancelado: "destructive",
-} as const;
 
 const Ventas = () => {
   const [sales, setSales] = useState<Sale[]>([]);
@@ -72,7 +66,7 @@ const Ventas = () => {
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const pageSize = 10;
+  const pageSize = MODULE_CONFIG.ventas.pageSize;
 
   const { formatPrice, formatPriceDual } = usePriceFormatter();
   const { convertToUSD, oficialRate } = useDolar();
@@ -520,7 +514,13 @@ const Ventas = () => {
                         {formatPriceDual(sale.total, sale.total_bs)}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={estadoBadgeVariant[sale.estado] || "secondary"}>
+                        <Badge
+                          variant={
+                            BADGE_VARIANTS.estadoBadgeVariant[
+                              sale.estado as keyof typeof BADGE_VARIANTS.estadoBadgeVariant
+                            ] || "secondary"
+                          }
+                        >
                           {sale.estado}
                         </Badge>
                       </TableCell>

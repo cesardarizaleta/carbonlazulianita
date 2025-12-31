@@ -5,6 +5,7 @@ import { RecentSalesTable } from "@/components/dashboard/RecentSalesTable";
 import { SalesChart } from "@/components/dashboard/SalesChart";
 import { InventoryStatus } from "@/components/dashboard/InventoryStatus";
 import { DollarSign, Package, ShoppingCart, AlertCircle, Loader2 } from "lucide-react";
+import { APP_CONFIG } from "@/constants";
 import { ventaService, inventarioService, cobranzaService } from "@/services";
 
 const Dashboard = () => {
@@ -31,25 +32,32 @@ const Dashboard = () => {
       const currentMonth = new Date().getMonth();
       const currentYear = new Date().getFullYear();
 
-      const ventasMes = salesResponse.data
-        ?.filter(venta => {
-          const ventaDate = new Date(venta.fecha_venta);
-          return ventaDate.getMonth() === currentMonth && ventaDate.getFullYear() === currentYear;
-        })
-        .reduce((acc, venta) => acc + venta.total, 0) || 0;
+      const ventasMes =
+        salesResponse.data
+          ?.filter(venta => {
+            const ventaDate = new Date(venta.fecha_venta);
+            return ventaDate.getMonth() === currentMonth && ventaDate.getFullYear() === currentYear;
+          })
+          .reduce((acc, venta) => acc + venta.total, 0) || 0;
 
       // Load inventory data
       const inventoryResponse = await inventarioService.getProductos(1, 1000);
-      const inventarioTotal = inventoryResponse.data?.reduce((acc, item) => acc + (item.stock * (item.peso || 0)), 0) || 0;
+      const inventarioTotal =
+        inventoryResponse.data?.reduce((acc, item) => acc + item.stock * (item.peso || 0), 0) || 0;
 
       // Calculate inventory capacity (assuming 150% of current stock as capacity)
-      const inventarioCapacidad = Math.max(inventarioTotal * 1.5, 50000); // Minimum 50,000kg capacity
+      const inventarioCapacidad = Math.max(
+        inventarioTotal * APP_CONFIG.INVENTORY.CAPACITY_MULTIPLIER,
+        APP_CONFIG.INVENTORY.MIN_CAPACITY_KG
+      ); // Minimum 50,000kg capacity
       const inventarioPercentage = (inventarioTotal / inventarioCapacidad) * 100;
 
       // Load pending collections
       const cobranzaResponse = await cobranzaService.getCobranzas(1, 1000);
-      const cuentasPorCobrar = cobranzaResponse.data?.reduce((acc, cob) => acc + cob.monto_pendiente, 0) || 0;
-      const pedidosPendientes = cobranzaResponse.data?.filter(cob => cob.estado !== "pagado").length || 0;
+      const cuentasPorCobrar =
+        cobranzaResponse.data?.reduce((acc, cob) => acc + cob.monto_pendiente, 0) || 0;
+      const pedidosPendientes =
+        cobranzaResponse.data?.filter(cob => cob.estado !== "pagado").length || 0;
 
       setStats({
         ventasMes,

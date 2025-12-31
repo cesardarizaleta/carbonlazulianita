@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Progress } from "@/components/ui/progress";
+import { APP_CONFIG } from "@/constants";
 import { inventarioService } from "@/services";
 import type { Producto } from "@/services";
 
@@ -42,21 +43,23 @@ export function InventoryStatus() {
       });
 
       // Convert to inventory items with estimated capacity
-      const items: InventoryItem[] = Array.from(categoryTotals.entries()).map(([category, data]) => {
-        // Estimate capacity as 2x current stock for display purposes
-        const capacidad = Math.max(data.stock * 2, 5000); // Minimum 5000kg capacity
-        return {
-          nombre: category,
-          stock: data.stock,
-          capacidad,
-          unidad: "kg",
-        };
-      });
+      const items: InventoryItem[] = Array.from(categoryTotals.entries()).map(
+        ([category, data]) => {
+          // Estimate capacity as 2x current stock for display purposes
+          const capacidad = Math.max(data.stock * 2, APP_CONFIG.INVENTORY.MIN_CAPACITY_KG / 10); // Minimum 5,000kg per category
+          return {
+            nombre: category,
+            stock: data.stock,
+            capacidad,
+            unidad: "kg",
+          };
+        }
+      );
 
       // Sort by stock level (lowest first)
-      items.sort((a, b) => (a.stock / a.capacidad) - (b.stock / b.capacidad));
+      items.sort((a, b) => a.stock / a.capacidad - b.stock / b.capacidad);
 
-      setInventoryItems(items.slice(0, 4)); // Show top 4 categories
+      setInventoryItems(items.slice(0, APP_CONFIG.DASHBOARD.INVENTORY_CATEGORIES_LIMIT)); // Show top categories
     } catch (error) {
       console.error("Error loading inventory data:", error);
     } finally {

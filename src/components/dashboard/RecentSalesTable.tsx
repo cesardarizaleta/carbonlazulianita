@@ -8,25 +8,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { BADGE_VARIANTS } from "@/constants";
 import { ventaService, clienteService } from "@/services";
 import type { Venta, Cliente } from "@/services";
-
-interface RecentSale {
-  id: string;
-  cliente: string;
-  producto: string;
-  cantidad: string;
-  total: string;
-  estado: string;
-}
-
-const estadoBadgeVariant = {
-  completado: "default",
-  pendiente: "secondary",
-  procesando: "outline",
-  enviado: "outline",
-  cancelado: "destructive",
-} as const;
 
 export function RecentSalesTable() {
   const [recentSales, setRecentSales] = useState<RecentSale[]>([]);
@@ -41,7 +25,10 @@ export function RecentSalesTable() {
       setLoading(true);
 
       // Get recent sales
-      const salesResponse = await ventaService.getVentas(1, 10);
+      const salesResponse = await ventaService.getVentas(
+        1,
+        APP_CONFIG.DASHBOARD.RECENT_SALES_LIMIT
+      );
       const clientesResponse = await clienteService.getClientes(1, 100);
 
       if (salesResponse.error || clientesResponse.error) {
@@ -56,14 +43,17 @@ export function RecentSalesTable() {
       });
 
       // Process sales data
-      const sales: RecentSale[] = salesResponse.data?.map(venta => ({
-        id: `VTA-${venta.id.slice(-3)}`,
-        cliente: venta.cliente_id ? clientesMap.get(venta.cliente_id) || "Cliente desconocido" : "Sin cliente",
-        producto: "Múltiples productos", // We don't have product details in venta summary
-        cantidad: "N/A", // We don't have quantity in venta summary
-        total: `$${venta.total.toLocaleString()}`,
-        estado: venta.estado,
-      })) || [];
+      const sales: RecentSale[] =
+        salesResponse.data?.map(venta => ({
+          id: `VTA-${venta.id.slice(-3)}`,
+          cliente: venta.cliente_id
+            ? clientesMap.get(venta.cliente_id) || "Cliente desconocido"
+            : "Sin cliente",
+          producto: "Múltiples productos", // We don't have product details in venta summary
+          cantidad: "N/A", // We don't have quantity in venta summary
+          total: `$${venta.total.toLocaleString()}`,
+          estado: venta.estado,
+        })) || [];
 
       setRecentSales(sales);
     } catch (error) {
@@ -121,7 +111,13 @@ export function RecentSalesTable() {
                   <TableCell>{sale.cantidad}</TableCell>
                   <TableCell className="font-medium">{sale.total}</TableCell>
                   <TableCell>
-                    <Badge variant={estadoBadgeVariant[sale.estado as keyof typeof estadoBadgeVariant] || "outline"}>
+                    <Badge
+                      variant={
+                        BADGE_VARIANTS.estadoBadgeVariant[
+                          sale.estado as keyof typeof BADGE_VARIANTS.estadoBadgeVariant
+                        ] || "outline"
+                      }
+                    >
                       {sale.estado}
                     </Badge>
                   </TableCell>

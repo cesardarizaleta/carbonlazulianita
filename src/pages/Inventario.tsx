@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Plus, Search, Edit, Trash2, Package, Loader2 } from "lucide-react";
+import { MODULE_CONFIG } from "@/constants";
 import { inventarioService } from "@/services";
 import { supabase } from "@/integrations/supabase/client";
 import type { Producto } from "@/services";
@@ -39,7 +40,7 @@ const Inventario = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const pageSize = 10;
+  const pageSize = MODULE_CONFIG.inventario.pageSize;
 
   const { formatPrice } = usePriceFormatter();
   const { confirm, ConfirmDialog } = useConfirm();

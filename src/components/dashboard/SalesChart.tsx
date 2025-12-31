@@ -8,6 +8,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { APP_CONFIG } from "@/constants";
 import { ventaService, cobranzaService } from "@/services";
 
 interface ChartData {
@@ -44,14 +45,14 @@ export function SalesChart() {
       // Process sales
       salesResponse.data?.forEach(venta => {
         const date = new Date(venta.fecha_venta);
-        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
         salesByMonth.set(monthKey, (salesByMonth.get(monthKey) || 0) + venta.total);
       });
 
       // Process cobranza
       cobranzaResponse.data?.forEach(cob => {
         const date = new Date(cob.fecha_cobranza);
-        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
         cobranzaByMonth.set(monthKey, (cobranzaByMonth.get(monthKey) || 0) + cob.monto_pagado);
       });
 
@@ -59,10 +60,10 @@ export function SalesChart() {
       const chartData: ChartData[] = [];
       const now = new Date();
 
-      for (let i = 5; i >= 0; i--) {
+      for (let i = APP_CONFIG.DASHBOARD.CHART_MONTHS - 1; i >= 0; i--) {
         const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-        const monthName = date.toLocaleDateString('es-ES', { month: 'short' });
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+        const monthName = date.toLocaleDateString("es-ES", { month: "short" });
 
         chartData.push({
           mes: monthName,
