@@ -91,7 +91,7 @@ const Cobranza = () => {
   const filteredInvoices = invoices.filter(invoice => {
     const matchesSearch =
       invoice.cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      invoice.id.toLowerCase().includes(searchTerm.toLowerCase());
+      String(invoice.id).toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterEstado === "todos" || invoice.estado === filterEstado;
     return matchesSearch && matchesFilter;
   });

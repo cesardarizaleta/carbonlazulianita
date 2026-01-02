@@ -119,7 +119,7 @@ const Ventas = () => {
   const filteredSales = sales.filter(sale => {
     const matchesSearch =
       (sale.cliente?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
-      sale.id.toLowerCase().includes(searchTerm.toLowerCase());
+      String(sale.id).toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterEstado === "todos" || sale.estado === filterEstado;
     return matchesSearch && matchesFilter;
   });
@@ -129,7 +129,6 @@ const Ventas = () => {
 
   const resetForm = () => {
     setSelectedCliente("");
-    setTotal("");
     setIsInDollars(true);
     setVentaItems([]);
     setSelectedProducto("");
@@ -267,7 +266,7 @@ const Ventas = () => {
         // Actualizar lista local
         setSales(sales.map(s => (s.id === sale.id ? { ...s, estado: "completado" } : s)));
       }
-    } catch {
+    } catch (err) {
       setError("Error inesperado al aprobar venta");
       console.error(err);
     } finally {
