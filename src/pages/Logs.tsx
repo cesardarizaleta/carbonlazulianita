@@ -20,6 +20,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import {
   Loader2,
   Search,
   RefreshCw,
@@ -36,6 +45,7 @@ import { MODULE_CONFIG } from "@/constants";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import { loggingService } from "@/services";
+import ExcelJS from "exceljs";
 
 interface LogEntry {
   id: string;
@@ -83,6 +93,12 @@ export default function LogsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const pageSize = MODULE_CONFIG.logs.pageSize;
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [exportLimit, setExportLimit] = useState(1000);
+  const [exportTableFilter, setExportTableFilter] = useState<string>("all");
+  const [exportOperationFilter, setExportOperationFilter] = useState<string>("all");
+  const [exportTimeRange, setExportTimeRange] = useState<number>(30);
+  const [exporting, setExporting] = useState(false);
 
   const loadLogs = async () => {
     setLoading(true);
@@ -136,29 +152,118 @@ export default function LogsPage() {
     .filter(log => log.execution_time_ms)
     .reduce((acc, log, _, arr) => acc + (log.execution_time_ms || 0) / arr.length, 0);
 
-  const exportLogs = () => {
-    const csvContent = [
-      ["Fecha", "Usuario", "Tabla", "Operación", "ID Registro", "Tiempo (ms)", "Error"].join(","),
-      ...filteredLogs.map(log =>
-        [
-          new Date(log.timestamp).toISOString(),
-          log.user_email,
-          log.table_name,
-          log.operation,
-          log.record_id || "",
-          log.execution_time_ms || "",
-          log.error_message || "",
-        ].join(",")
-      ),
-    ].join("\n");
+  const handleExportExcel = async () => {
+    setExporting(true);
+    try {
+      const exportData = await loggingService.getLogsForExport({
+        limit: exportLimit,
+        tableFilter: exportTableFilter,
+        operationFilter: exportOperationFilter,
+        searchTerm,
+        timeRangeDays: exportTimeRange,
+      });
 
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `logs_${new Date().toISOString().split("T")[0]}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
+      if (!exportData.length) {
+        setExporting(false);
+        setExportModalOpen(false);
+        return;
+      }
+
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Logs");
+
+      worksheet.properties.defaultRowHeight = 20;
+
+      worksheet.mergeCells("A1:H1");
+      const titleCell = worksheet.getCell("A1");
+      titleCell.value = `Logs del sistema (${exportData.length} registros)`;
+      titleCell.font = { size: 14, bold: true, color: { argb: "FF1F2937" } };
+      titleCell.alignment = { horizontal: "center" };
+
+      worksheet.getRow(2).values = [
+        "Fecha",
+        "Usuario",
+        "Tabla",
+        "Operación",
+        "ID Registro",
+        "Tiempo (ms)",
+        "Estado",
+        "Detalle",
+      ];
+
+      worksheet.columns = [
+        { key: "fecha", width: 22 },
+        { key: "usuario", width: 28 },
+        { key: "tabla", width: 18 },
+        { key: "operacion", width: 14 },
+        { key: "registro", width: 18 },
+        { key: "tiempo", width: 12 },
+        { key: "estado", width: 14 },
+        { key: "detalle", width: 40 },
+      ];
+
+      worksheet.getRow(2).eachCell(cell => {
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FFE5E7EB" },
+        };
+        cell.font = { bold: true, color: { argb: "FF111827" } };
+        cell.border = {
+          bottom: { style: "thin", color: { argb: "FFD1D5DB" } },
+        };
+      });
+
+      exportData.forEach((log, index) => {
+        const row = worksheet.addRow({
+          fecha: new Date(log.timestamp || "").toLocaleString(),
+          usuario: log.user_email || "Sistema",
+          tabla: log.table_name,
+          operacion: log.operation,
+          registro: log.record_id || "-",
+          tiempo: log.execution_time_ms || "-",
+          estado: log.error_message ? "Error" : "OK",
+          detalle: log.error_message || "",
+        });
+
+        row.eachCell(cell => {
+          cell.border = { bottom: { style: "hair", color: { argb: "FFE5E7EB" } } };
+          cell.alignment = { vertical: "middle", wrapText: true };
+        });
+
+        if (index % 2 === 0) {
+          row.eachCell(cell => {
+            cell.fill = {
+              type: "pattern",
+              pattern: "solid",
+              fgColor: { argb: "FFF9FAFB" },
+            };
+          });
+        }
+      });
+
+      worksheet.autoFilter = {
+        from: { row: 2, column: 1 },
+        to: { row: 2, column: 8 },
+      };
+      worksheet.views = [{ state: "frozen", ySplit: 2 }];
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `logs_${new Date().toISOString().split("T")[0]}.xlsx`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+      setExportModalOpen(false);
+    } catch (error) {
+      console.error("Error exporting logs:", error);
+    } finally {
+      setExporting(false);
+    }
   };
 
   return (
@@ -171,9 +276,18 @@ export default function LogsPage() {
             <p className="text-muted-foreground">Monitoreo completo de todas las operaciones</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={exportLogs}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setExportTableFilter(tableFilter);
+                setExportOperationFilter(operationFilter);
+                setExportTimeRange(timeRange);
+                setExportLimit(1000);
+                setExportModalOpen(true);
+              }}
+            >
               <Download className="w-4 h-4 mr-2" />
-              Exportar CSV
+              Exportar Excel
             </Button>
             <Button onClick={loadLogs} disabled={loading}>
               <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
@@ -437,6 +551,109 @@ export default function LogsPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={exportModalOpen} onOpenChange={setExportModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Exportar logs a Excel</DialogTitle>
+            <DialogDescription>
+              Define el número de registros (máx. 1000) y filtros para la exportación.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="export-limit">Cantidad de registros (hasta 10,000)</Label>
+              <Input
+                id="export-limit"
+                type="number"
+                min={10}
+                max={10000}
+                value={exportLimit}
+                onChange={e =>
+                  setExportLimit(Math.min(10000, Math.max(0, Number(e.target.value) || 0)))
+                }
+              />
+              <p className="text-xs text-muted-foreground">
+                Recomendado: hasta 1000 registros. Puedes exportar hasta 10,000 bajo tu propio
+                riesgo. Puede tardar más y ser pesado para el navegador.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Tabla</Label>
+                <Select value={exportTableFilter} onValueChange={setExportTableFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona tabla" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas</SelectItem>
+                    {uniqueTables.map(table => (
+                      <SelectItem key={table} value={table}>
+                        {table}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Operación</Label>
+                <Select value={exportOperationFilter} onValueChange={setExportOperationFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona operación" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas</SelectItem>
+                    {uniqueOperations.map(operation => (
+                      <SelectItem key={operation} value={operation}>
+                        {operation}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Rango de tiempo</Label>
+                <Select
+                  value={exportTimeRange.toString()}
+                  onValueChange={value => setExportTimeRange(Number(value))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona rango" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">Último día</SelectItem>
+                    <SelectItem value="7">Última semana</SelectItem>
+                    <SelectItem value="30">Último mes</SelectItem>
+                    <SelectItem value="90">Últimos 3 meses</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setExportModalOpen(false)}
+              disabled={exporting}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handleExportExcel} disabled={exporting}>
+              {exporting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Exportando...
+                </>
+              ) : (
+                "Exportar"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 }

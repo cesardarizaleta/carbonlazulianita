@@ -246,6 +246,63 @@ class LoggingService {
     }
   }
 
+  async getLogsForExport(params: {
+    limit?: number;
+    tableFilter?: string;
+    operationFilter?: string;
+    searchTerm?: string;
+    timeRangeDays?: number;
+  }): Promise<LogEntry[]> {
+    const {
+      limit = 1000,
+      tableFilter = "all",
+      operationFilter = "all",
+      searchTerm = "",
+      timeRangeDays = 30,
+    } = params;
+
+    try {
+      let query = supabase
+        .from("logs")
+        .select("*")
+        .order("timestamp", { ascending: false })
+        .limit(limit);
+
+      if (tableFilter !== "all") {
+        query = query.eq("table_name", tableFilter);
+      }
+
+      if (operationFilter !== "all") {
+        query = query.eq("operation", operationFilter);
+      }
+
+      if (timeRangeDays) {
+        const fromDate = new Date();
+        fromDate.setDate(fromDate.getDate() - timeRangeDays);
+        query = query.gte("timestamp", fromDate.toISOString());
+      }
+
+      if (searchTerm) {
+        const term = `%${searchTerm.toLowerCase()}%`;
+        query = query.or(
+          `user_email.ilike.${term},table_name.ilike.${term},operation.ilike.${term},error_message.ilike.${term}`
+        );
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.warn("Error getting logs for export:", error);
+        return [];
+      }
+
+      return data || [];
+    } catch (err) {
+      console.warn("Error in getLogsForExport:", err);
+      return [];
+    }
+  }
+
   // Obtener total de operaciones
   async getTotalOperations(): Promise<number> {
     try {
