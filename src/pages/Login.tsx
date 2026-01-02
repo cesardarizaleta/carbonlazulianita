@@ -8,8 +8,18 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, LogIn, AlertCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import logoZulianita from "@/assets/logo-zulianita.jpg";
+import { APP_CONFIG } from "@/constants";
 
 const Login = () => {
+  const brand = APP_CONFIG.BRAND;
+  const logoSrc =
+    brand.LOGO_URL && brand.LOGO_URL !== "/logo-zulianita.jpg" ? brand.LOGO_URL : logoZulianita;
+  const brandName = brand.NAME || APP_CONFIG.NAME;
+  const brandTagline = brand.TAGLINE || "Sistema ERP";
+  const footerText = brand.FOOTER_TEXT || `Sistema de gestión • ${brandName}`;
+  const gradientFrom = brand.GRADIENT_FROM || "from-primary/20";
+  const gradientTo = brand.GRADIENT_TO || "to-accent/20";
+
   const navigate = useNavigate();
   const location = useLocation();
   const { signIn } = useAuth();
@@ -45,24 +55,30 @@ const Login = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-sidebar p-4">
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent/20 rounded-full blur-3xl animate-pulse delay-1000" />
+        <div
+          className={`absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl animate-pulse bg-gradient-to-br ${gradientFrom} ${gradientTo}`}
+        />
+        <div
+          className={`absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-3xl animate-pulse delay-1000 bg-gradient-to-br ${gradientFrom} ${gradientTo}`}
+        />
       </div>
 
       <Card className="w-full max-w-md relative z-10 animate-slide-up bg-card/95 backdrop-blur-sm border-border/50">
         <CardHeader className="text-center space-y-4">
           <div className="flex justify-center">
             <img
-              src={logoZulianita}
-              alt="La Zulianita"
+              src={logoSrc}
+              alt={brandName}
               className="w-24 h-24 rounded-xl shadow-lg animate-glow"
             />
           </div>
           <div>
             <CardTitle className="text-2xl font-display font-bold">
-              Bienvenido a <span className="text-primary">La Zulianita</span>
+              Bienvenido a <span className="text-primary">{brandName}</span>
             </CardTitle>
-            <CardDescription>Sistema ERP - Gestiona tu negocio de manera eficiente</CardDescription>
+            <CardDescription>
+              {brandTagline} - Gestiona tu negocio de manera eficiente
+            </CardDescription>
           </div>
         </CardHeader>
         <CardContent>
@@ -125,9 +141,7 @@ const Login = () => {
             </Button>
           </form>
 
-          <p className="text-center text-xs text-muted-foreground mt-6">
-            Sistema de gestión empresarial • La Zulianita © 2025
-          </p>
+          <p className="text-center text-xs text-muted-foreground mt-6">{footerText}</p>
         </CardContent>
       </Card>
     </div>

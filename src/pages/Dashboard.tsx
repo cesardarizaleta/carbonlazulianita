@@ -6,6 +6,7 @@ import { InventoryStatus } from "@/components/dashboard/InventoryStatus";
 import { DollarSign, Package, ShoppingCart, AlertCircle, Loader2, RefreshCw } from "lucide-react";
 import { useDashboardData } from "@/hooks/useQueries";
 import { Button } from "@/components/ui/button";
+import { APP_CONFIG } from "@/constants";
 
 const Dashboard = () => {
   const { isLoading, isError, stats, refetchAll } = useDashboardData();
@@ -71,7 +72,7 @@ const Dashboard = () => {
         {/* Header */}
         <div className="animate-fade-in">
           <h1 className="text-3xl font-display font-bold text-foreground">
-            Bienvenido a <span className="text-primary">La Zulianita</span>
+            Bienvenido a <span className="text-primary">{APP_CONFIG.BRAND.NAME}</span>
           </h1>
           <p className="text-muted-foreground mt-1">
             Resumen general del negocio •{" "}

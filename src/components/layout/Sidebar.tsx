@@ -7,8 +7,6 @@ import {
   CreditCard,
   Users,
   Settings,
-  ChevronLeft,
-  ChevronRight,
   LogOut,
   User,
   X,
@@ -16,6 +14,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+import { APP_CONFIG } from "@/constants";
 import logoZulianita from "@/assets/logo-zulianita.jpg";
 
 const menuItems = [
@@ -33,11 +32,15 @@ interface SidebarProps {
 }
 
 export function Sidebar({ onClose }: SidebarProps) {
-  const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+
+  const brandLogo = APP_CONFIG.BRAND.LOGO_URL;
+  const logoSrc = brandLogo && brandLogo !== "/logo-zulianita.jpg" ? brandLogo : logoZulianita;
+  const brandName = APP_CONFIG.BRAND.NAME || APP_CONFIG.NAME;
+  const brandTagline = APP_CONFIG.BRAND.TAGLINE || "Sistema ERP";
 
   useEffect(() => {
     const checkIsMobile = () => {
@@ -82,25 +85,20 @@ export function Sidebar({ onClose }: SidebarProps) {
       {/* Logo */}
       <div className="flex items-center justify-center p-4 border-b border-sidebar-border">
         <img
-          src={logoZulianita}
-          alt="La Zulianita"
-          className={cn(
-            "transition-all duration-300 rounded-lg",
-            collapsed && !isMobile ? "w-12 h-12" : "w-16 h-16 lg:w-20 lg:h-20"
-          )}
+          src={logoSrc}
+          alt={brandName}
+          className="w-16 h-16 lg:w-20 lg:h-20 rounded-lg object-cover"
         />
-        {(!collapsed || isMobile) && (
-          <div className="ml-3">
-            <h1 className="font-display font-bold text-sidebar-primary text-lg leading-tight">
-              LA ZULIANITA
-            </h1>
-            <p className="text-xs text-sidebar-foreground/60">Sistema ERP</p>
-          </div>
-        )}
+        <div className="ml-3">
+          <h1 className="font-display font-bold text-sidebar-primary text-lg leading-tight">
+            {brandName?.toUpperCase()}
+          </h1>
+          <p className="text-xs text-sidebar-foreground/60">{brandTagline}</p>
+        </div>
       </div>
 
       {/* User Info */}
-      {user && (!collapsed || isMobile) && (
+      {user && (
         <div className="px-4 py-3 border-b border-sidebar-border">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-sidebar-primary rounded-full flex items-center justify-center">
@@ -131,9 +129,7 @@ export function Sidebar({ onClose }: SidebarProps) {
               )}
             >
               <item.icon className={cn("w-5 h-5 flex-shrink-0", isActive && "animate-pulse")} />
-              {(!collapsed || isMobile) && (
-                <span className="font-medium truncate">{item.label}</span>
-              )}
+              <span className="font-medium truncate">{item.label}</span>
             </NavLink>
           );
         })}
@@ -141,28 +137,12 @@ export function Sidebar({ onClose }: SidebarProps) {
 
       {/* Footer */}
       <div className="p-3 border-t border-sidebar-border">
-        {!isMobile && (
-          <button
-            onClick={() => setCollapsed(!collapsed)}
-            className="flex items-center justify-center w-full gap-2 px-4 py-2 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors mb-2"
-          >
-            {collapsed ? (
-              <ChevronRight className="w-5 h-5" />
-            ) : (
-              <>
-                <ChevronLeft className="w-5 h-5" />
-                <span className="text-sm">Colapsar</span>
-              </>
-            )}
-          </button>
-        )}
-
         <button
           onClick={handleSignOut}
           className="flex items-center gap-3 px-4 py-2 w-full rounded-lg text-sidebar-foreground hover:bg-destructive hover:text-destructive-foreground transition-colors"
         >
           <LogOut className="w-5 h-5" />
-          {(!collapsed || isMobile) && <span className="text-sm">Cerrar Sesión</span>}
+          <span className="text-sm">Cerrar Sesión</span>
         </button>
       </div>
     </aside>

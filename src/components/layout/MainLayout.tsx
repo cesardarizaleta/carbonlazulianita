@@ -5,6 +5,7 @@ import { QuickAccess } from "@/components/QuickAccess";
 import { cn } from "@/lib/utils";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { APP_CONFIG } from "@/constants";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -72,7 +73,9 @@ export function MainLayout({ children }: MainLayoutProps) {
           >
             {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </Button>
-          <h1 className="font-display font-bold text-primary text-lg">LA ZULIANITA</h1>
+          <h1 className="font-display font-bold text-primary text-lg">
+            {APP_CONFIG.BRAND.SHORT_NAME || APP_CONFIG.BRAND.NAME || APP_CONFIG.NAME}
+          </h1>
           <div className="w-10" /> {/* Spacer for centering */}
         </div>
 
