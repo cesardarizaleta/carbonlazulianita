@@ -12,8 +12,8 @@ import {
 } from "@/components/ui/select";
 import { Trash2 } from "lucide-react";
 import { usePriceFormatter } from "@/hooks/usePriceFormatter";
-import { useDolar } from "@/contexts/DolarContext";
-import { useAuth } from "@/contexts/AuthContext";
+import { useDolar } from "@/hooks/useDolar";
+import { useAuth } from "@/hooks/useAuth";
 import { ventaService, clienteService, inventarioService } from "@/services";
 import type { Cliente, Producto, VentaItem } from "@/services";
 import { useToast } from "@/hooks/use-toast";

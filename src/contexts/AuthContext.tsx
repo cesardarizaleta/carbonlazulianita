@@ -90,24 +90,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      setIsSigningIn(true);
       const result = await authService.signIn(email, password);
 
       if (result.error) {
-        setIsSigningIn(false);
         return { error: result.error };
       }
 
       if (result.data) {
         setUser(result.data);
         setLoading(false);
-        setIsSigningIn(false);
       }
 
       return { error: null };
     } catch (error) {
       console.error("Sign in error:", error);
-      setIsSigningIn(false);
       return { error: "Error inesperado al iniciar sesión" };
     }
   };

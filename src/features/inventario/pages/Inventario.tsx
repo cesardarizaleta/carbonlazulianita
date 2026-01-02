@@ -26,6 +26,7 @@ import { Plus, Search, Edit, Trash2, Package, Loader2 } from "lucide-react";
 import { MODULE_CONFIG } from "@/constants";
 import { inventarioService } from "@/services";
 import { supabase } from "@/integrations/supabase/client";
+import { useInventarioStore } from "@/stores/inventarioStore";
 import type { Producto } from "@/services";
 
 type Product = Producto;
@@ -44,10 +45,39 @@ const Inventario = () => {
 
   const { formatPrice } = usePriceFormatter();
   const { confirm, ConfirmDialog } = useConfirm();
+  
+  // Store de inventario para sincronización en tiempo real
+  const storeProductos = useInventarioStore((state) => state.productos);
+  const setStoreProductos = useInventarioStore((state) => state.setProductos);
+  const addProductoToStore = useInventarioStore((state) => state.addProducto);
+  const updateProductoInStore = useInventarioStore((state) => state.updateProducto);
+  const removeProductoFromStore = useInventarioStore((state) => state.removeProducto);
 
   useEffect(() => {
     checkAuthAndLoadProducts();
   }, [currentPage]);
+
+  // Sincronizar productos del store cuando cambian (actualizaciones en tiempo real)
+  // Nota: El store mantiene todos los productos, pero aquí usamos paginación del servidor
+  // Por lo tanto, solo sincronizamos cuando hay cambios específicos en productos que ya tenemos
+  useEffect(() => {
+    if (storeProductos.length > 0 && products.length > 0) {
+      // Buscar productos actualizados en el store que están en la página actual
+      const updatedProducts = products.map(localProduct => {
+        const storeProduct = storeProductos.find(sp => sp.id === localProduct.id);
+        return storeProduct || localProduct;
+      });
+      
+      // Solo actualizar si hay cambios
+      const hasChanges = updatedProducts.some((up, index) => 
+        JSON.stringify(up) !== JSON.stringify(products[index])
+      );
+      
+      if (hasChanges) {
+        setProducts(updatedProducts);
+      }
+    }
+  }, [storeProductos]);
 
   const checkAuthAndLoadProducts = async () => {
     try {
@@ -65,7 +95,7 @@ const Inventario = () => {
 
       setIsAuthenticated(true);
       await loadProducts();
-    } catch {
+    } catch (err) {
       console.error("Auth check error:", err);
       setIsAuthenticated(false);
       setError("Error al verificar autenticación");
@@ -93,10 +123,14 @@ const Inventario = () => {
           setError(response.error);
         }
       } else {
-        setProducts(response.data || []);
+        const loadedProducts = response.data || [];
+        setProducts(loadedProducts);
         setTotalPages(Math.ceil(response.count / pageSize));
+        
+        // Sincronizar con el store
+        setStoreProductos(loadedProducts);
       }
-    } catch {
+    } catch (err) {
       console.error("Unexpected error:", err);
       setError("Error al conectar con la base de datos");
     } finally {
@@ -138,16 +172,22 @@ const Inventario = () => {
         if (response.error) {
           setError(response.error);
         } else {
+          const updatedProduct = { ...editingProduct, ...productData };
           setProducts(
-            products.map(p => (p.id === editingProduct.id ? { ...p, ...productData } : p))
+            products.map(p => (p.id === editingProduct.id ? updatedProduct : p))
           );
+          // Actualizar en el store (la suscripción en tiempo real también lo hará, pero esto es más inmediato)
+          updateProductoInStore(editingProduct.id, productData);
         }
       } else {
         const response = await inventarioService.createProducto(productData);
         if (response.error) {
           setError(response.error);
         } else {
-          setProducts([...products, response.data!]);
+          const newProduct = response.data!;
+          setProducts([...products, newProduct]);
+          // Agregar al store (la suscripción en tiempo real también lo hará, pero esto es más inmediato)
+          addProductoToStore(newProduct);
         }
       }
       setIsDialogOpen(false);
@@ -176,6 +216,8 @@ const Inventario = () => {
         setError(response.error);
       } else {
         setProducts(products.filter(p => p.id !== id));
+        // Eliminar del store (la suscripción en tiempo real también lo hará, pero esto es más inmediato)
+        removeProductoFromStore(id);
       }
     } catch {
       setError("Error al eliminar producto");

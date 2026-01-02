@@ -1,4 +1,4 @@
-import { useDolar } from "@/contexts/DolarContext";
+import { useDolar } from "@/hooks/useDolar";
 
 export function usePriceFormatter() {
   const { convertToUSD, oficialRate, showInUSD } = useDolar();

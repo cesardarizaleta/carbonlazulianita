@@ -13,7 +13,7 @@ import {
   Database,
   DollarSign,
 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { APP_CONFIG } from "@/constants";
 import logoZulianita from "@/assets/logo-zulianita.jpg";

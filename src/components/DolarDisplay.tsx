@@ -1,4 +1,4 @@
-import { useDolar } from "@/contexts/DolarContext";
+import { useDolar } from "@/hooks/useDolar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";

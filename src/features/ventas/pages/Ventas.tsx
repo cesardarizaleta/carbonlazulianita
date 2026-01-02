@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { usePriceFormatter } from "@/hooks/usePriceFormatter";
-import { useDolar } from "@/contexts/DolarContext";
+import { useDolar } from "@/hooks/useDolar";
 import { SimplePagination } from "@/components/SimplePagination";
 import {
   Table,
