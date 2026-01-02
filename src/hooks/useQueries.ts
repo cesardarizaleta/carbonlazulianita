@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ventaService, clienteService, inventarioService, cobranzaService } from "@/services";
 import { APP_CONFIG } from "@/constants";
-import type { Venta, Cliente, Producto, Cobranza, VentaItem } from "@/services";
+import type { Venta, Producto, VentaItem } from "@/services";
 
 // Query Keys
 export const queryKeys = {

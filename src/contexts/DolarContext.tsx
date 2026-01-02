@@ -35,7 +35,7 @@ export function DolarProvider({ children }: DolarProviderProps) {
       } else {
         setRates(response.data);
       }
-    } catch (err) {
+    } catch {
       setError("Error al cargar tasas de dólar");
     } finally {
       setLoading(false);

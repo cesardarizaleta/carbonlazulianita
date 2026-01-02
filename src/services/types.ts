@@ -97,6 +97,7 @@ export interface ConfiguracionSistema {
 export interface ApiResponse<T> {
   data: T | null;
   error: string | null;
+  warning?: string | null;
 }
 
 export interface PaginatedResponse<T> {

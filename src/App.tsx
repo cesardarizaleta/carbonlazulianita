@@ -7,15 +7,16 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { DolarProvider } from "@/contexts/DolarContext";
 import { AuthGuard } from "@/components/AuthGuard";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import Dashboard from "./pages/Dashboard";
-import Inventario from "./pages/Inventario";
-import Ventas from "./pages/Ventas";
-import Cobranza from "./pages/Cobranza";
-import Clientes from "./pages/Clientes";
-import Configuracion from "./pages/Configuracion";
-import Logs from "./pages/Logs";
-import Login from "./pages/Login";
-import NotFound from "./pages/NotFound";
+import Dashboard from "./features/dashboard/pages/Dashboard";
+import Inventario from "./features/inventario/pages/Inventario";
+import Ventas from "./features/ventas/pages/Ventas";
+import Cobranza from "./features/cobranza/pages/Cobranza";
+import Clientes from "./features/clientes/pages/Clientes";
+import Configuracion from "./features/configuracion/pages/Configuracion";
+import Logs from "./features/logs/pages/Logs";
+import Gastos from "./features/gastos/pages/Gastos";
+import Login from "./features/auth/pages/Login";
+import NotFound from "./features/error/pages/NotFound";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -155,6 +156,14 @@ const App = () => (
                   element={
                     <AuthGuard>
                       <Logs />
+                    </AuthGuard>
+                  }
+                />
+                <Route
+                  path="/gastos"
+                  element={
+                    <AuthGuard>
+                      <Gastos />
                     </AuthGuard>
                   }
                 />

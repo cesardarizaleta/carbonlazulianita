@@ -23,6 +23,7 @@ const ConfirmDialog: React.FC<{
   title: string;
   description: string;
   onConfirm: () => void;
+  onCancel?: () => void;
   confirmText?: string;
   cancelText?: string;
 }> = ({
@@ -31,6 +32,7 @@ const ConfirmDialog: React.FC<{
   title,
   description,
   onConfirm,
+  onCancel,
   confirmText = "Confirmar",
   cancelText = "Cancelar",
 }) => {
@@ -42,7 +44,7 @@ const ConfirmDialog: React.FC<{
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>{cancelText}</AlertDialogCancel>
+          <AlertDialogCancel onClick={onCancel}>{cancelText}</AlertDialogCancel>
           <AlertDialogAction onClick={onConfirm}>{confirmText}</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -82,6 +84,7 @@ export const useConfirm = () => {
         title={options.title}
         description={options.description}
         onConfirm={handleConfirm}
+        onCancel={handleCancel}
         confirmText={options.confirmText}
         cancelText={options.cancelText}
       />

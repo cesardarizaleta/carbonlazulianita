@@ -1,11 +1,13 @@
 // Exportar todos los servicios y tipos
 export * from "./types";
-export * from "./authService";
-export * from "./clienteService";
-export * from "./inventarioService";
-export * from "./ventaService";
-export * from "./cobranzaService";
-export * from "./configService";
+export { authService } from "../features/auth/services/authService";
+export { clienteService } from "../features/clientes/services/clienteService";
+export { inventarioService } from "../features/inventario/services/inventarioService";
+export { ventaService } from "../features/ventas/services/ventaService";
+export { cobranzaService } from "../features/cobranza/services/cobranzaService";
+export { configService } from "../features/configuracion/services/configService";
 export * from "./dolarService";
-export * from "./loggingService";
+export { loggingService, measureExecutionTime } from "../features/logs/services/loggingService";
 export * from "./userService";
+
+export { gastosService } from "@/features/gastos/services/gastosService";

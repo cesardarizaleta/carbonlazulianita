@@ -1,8 +1,7 @@
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2, AlertTriangle } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface AuthGuardProps {
   children: ReactNode;

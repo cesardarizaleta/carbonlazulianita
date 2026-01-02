@@ -1,0 +1,431 @@
+import { supabase } from "@/integrations/supabase/client";
+import type {
+  Gastos,
+  ApiResponse,
+  PaginatedResponse,
+  GastosFormData,
+  CategoriaGasto,
+  EstadoGasto,
+} from "@/services/types";
+import type {
+  Gastos as GastosType,
+  GastosFormData as GastosFormDataType,
+  GastosStats as GastosStatsType,
+  GastosFilters as GastosFiltersType,
+} from "../types/gastos";
+
+class GastosService {
+  // Helper para obtener URL pública de un comprobante
+  private getComprobanteUrl(pathOrUrl: string): string {
+    // Si ya es una URL completa de Supabase Storage, devolverla tal cual
+    if (pathOrUrl.includes("supabase.co/storage/v1/object/public/")) {
+      return pathOrUrl;
+    }
+
+    // Si es solo un path, obtener la URL pública completa
+    const { data } = supabase.storage.from("comprobantes").getPublicUrl(pathOrUrl);
+
+    return data.publicUrl;
+  }
+  // Obtener todos los gastos (con paginación y filtros)
+  async getGastos(
+    page: number = 1,
+    limit: number = 10,
+    filters?: GastosFiltersType
+  ): Promise<PaginatedResponse<GastosType>> {
+    try {
+      const from = (page - 1) * limit;
+      const to = from + limit - 1;
+
+      let query = supabase
+        .from("gastos")
+        .select("*", { count: "exact" })
+        .range(from, to)
+        .order("fecha_creacion", { ascending: false });
+
+      // Aplicar filtros
+      if (filters) {
+        if (filters.fecha_desde) {
+          query = query.gte("fecha_gasto", filters.fecha_desde);
+        }
+        if (filters.fecha_hasta) {
+          query = query.lte("fecha_gasto", filters.fecha_hasta);
+        }
+        if (filters.categoria) {
+          query = query.eq("categoria", filters.categoria);
+        }
+        if (filters.estado) {
+          query = query.eq("estado", filters.estado);
+        }
+        if (filters.beneficiario) {
+          query = query.ilike("beneficiario", `%${filters.beneficiario}%`);
+        }
+      }
+
+      const { data, error, count } = await query;
+
+      if (error) {
+        console.error("Error fetching gastos:", error);
+        return { data: [], count: 0, error: error.message };
+      }
+
+      // Procesar los datos para asegurar que las comprobante_url sean URLs completas
+      const processedData = (data || []).map(item => ({
+        ...item,
+        comprobante_url: item.comprobante_url ? this.getComprobanteUrl(item.comprobante_url) : null,
+      }));
+
+      return {
+        data: processedData,
+        count: count || 0,
+        error: null,
+      };
+    } catch (err) {
+      console.error("Error in getGastos:", err);
+      return { data: [], count: 0, error: "Error al obtener gastos" };
+    }
+  }
+
+  // Obtener gasto por ID
+  async getGastoById(id: string): Promise<ApiResponse<GastosType>> {
+    try {
+      const { data, error } = await supabase.from("gastos").select("*").eq("id", id).single();
+
+      if (error) {
+        console.error("Error fetching gasto:", error);
+        return { data: null, error: error.message };
+      }
+
+      // Procesar el dato para asegurar que la comprobante_url sea una URL completa
+      const processedData = {
+        ...data,
+        comprobante_url: data.comprobante_url ? this.getComprobanteUrl(data.comprobante_url) : null,
+      };
+
+      return { data: processedData, error: null };
+    } catch (err) {
+      console.error("Error in getGastoById:", err);
+      return { data: null, error: "Error al obtener gasto" };
+    }
+  }
+
+  // Crear gasto
+  async createGasto(data: GastosFormDataType): Promise<ApiResponse<GastosType>> {
+    try {
+      // Preparar datos para inserción (solo incluir campos que existen)
+      // Si hay un archivo adjunto, intentar subirlo
+      let comprobante_url = null;
+      let uploadWarning = null;
+
+      if (data.comprobante) {
+        try {
+          const fileName = `${Date.now()}_${data.comprobante.name}`;
+
+          // Estrategia 1: Subida normal con upsert
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from("comprobantes")
+            .upload(fileName, data.comprobante, {
+              upsert: true,
+              contentType: data.comprobante.type,
+            });
+
+          if (!uploadError && uploadData) {
+            const { data: publicUrl } = supabase.storage
+              .from("comprobantes")
+              .getPublicUrl(uploadData.path);
+            comprobante_url = publicUrl.publicUrl;
+          } else {
+            console.warn("Estrategia 1 falló:", uploadError);
+
+            // Estrategia 2: Intentar sin especificar contentType
+            const { data: uploadData2, error: uploadError2 } = await supabase.storage
+              .from("comprobantes")
+              .upload(fileName, data.comprobante, { upsert: true });
+
+            if (!uploadError2 && uploadData2) {
+              const { data: publicUrl2 } = supabase.storage
+                .from("comprobantes")
+                .getPublicUrl(uploadData2.path);
+              comprobante_url = publicUrl2.publicUrl;
+            } else {
+              console.warn("Estrategia 2 falló:", uploadError2);
+
+              // Estrategia 3: Usar update en lugar de upload (para archivos existentes)
+              const { data: uploadData3, error: uploadError3 } = await supabase.storage
+                .from("comprobantes")
+                .update(fileName, data.comprobante, {
+                  contentType: data.comprobante.type,
+                });
+
+              if (!uploadError3 && uploadData3) {
+                const { data: publicUrl3 } = supabase.storage
+                  .from("comprobantes")
+                  .getPublicUrl(uploadData3.path);
+                comprobante_url = publicUrl3.publicUrl;
+              } else {
+                console.warn("Estrategia 3 falló:", uploadError3);
+                uploadWarning =
+                  "No se pudo subir el comprobante. El gasto se guardará sin comprobante.";
+              }
+            }
+          }
+        } catch (err) {
+          console.error("Error inesperado en subida:", err);
+          uploadWarning = "Error al procesar el comprobante. El gasto se guardará sin comprobante.";
+        }
+      }
+
+      const gastoData: Omit<Gastos, "id"> = {
+        fecha_gasto: data.fecha_gasto,
+        descripcion: data.descripcion,
+        categoria: data.categoria,
+        monto: data.monto,
+        moneda: data.moneda,
+        beneficiario: data.beneficiario,
+        referencia: data.referencia,
+        metodo_pago: data.metodo_pago,
+        notas: data.notas,
+        fecha_creacion: new Date().toISOString(),
+        estado: "pendiente" as EstadoGasto,
+        usuario_id: (await supabase.auth.getUser()).data.user?.id,
+      };
+
+      // Solo agregar comprobante_url si se subió exitosamente
+      if (comprobante_url) {
+        gastoData.comprobante_url = comprobante_url;
+      }
+
+      const { data: result, error } = await supabase
+        .from("gastos")
+        .insert(gastoData)
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error creating gasto:", error);
+        return { data: null, error: error.message };
+      }
+
+      // Retornar éxito con warning si hubo problemas con el comprobante
+      return {
+        data: result,
+        error: null,
+        warning: uploadWarning,
+      };
+    } catch (err) {
+      console.error("Error in createGasto:", err);
+      return { data: null, error: "Error al crear gasto" };
+    }
+  }
+
+  // Actualizar gasto
+  async updateGasto(id: string, data: Partial<GastosFormData>): Promise<ApiResponse<GastosType>> {
+    try {
+      // Si hay un archivo adjunto, intentar subirlo
+      let comprobante_url = null;
+      let uploadWarning = null;
+
+      if (data.comprobante) {
+        try {
+          const fileName = `${Date.now()}_${data.comprobante.name}`;
+
+          // Estrategia 1: Subida normal con upsert
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from("comprobantes")
+            .upload(fileName, data.comprobante, {
+              upsert: true,
+              contentType: data.comprobante.type,
+            });
+
+          if (!uploadError && uploadData) {
+            const { data: publicUrl } = supabase.storage
+              .from("comprobantes")
+              .getPublicUrl(uploadData.path);
+            comprobante_url = publicUrl.publicUrl;
+          } else {
+            console.warn("Estrategia 1 falló:", uploadError);
+
+            // Estrategia 2: Intentar sin especificar contentType
+            const { data: uploadData2, error: uploadError2 } = await supabase.storage
+              .from("comprobantes")
+              .upload(fileName, data.comprobante, { upsert: true });
+
+            if (!uploadError2 && uploadData2) {
+              const { data: publicUrl2 } = supabase.storage
+                .from("comprobantes")
+                .getPublicUrl(uploadData2.path);
+              comprobante_url = publicUrl2.publicUrl;
+            } else {
+              console.warn("Estrategia 2 falló:", uploadError2);
+
+              // Estrategia 3: Usar update en lugar de upload (para archivos existentes)
+              const { data: uploadData3, error: uploadError3 } = await supabase.storage
+                .from("comprobantes")
+                .update(fileName, data.comprobante, {
+                  contentType: data.comprobante.type,
+                });
+
+              if (!uploadError3 && uploadData3) {
+                const { data: publicUrl3 } = supabase.storage
+                  .from("comprobantes")
+                  .getPublicUrl(uploadData3.path);
+                comprobante_url = publicUrl3.publicUrl;
+              } else {
+                console.warn("Estrategia 3 falló:", uploadError3);
+                uploadWarning =
+                  "No se pudo subir el comprobante. El gasto se actualizará sin comprobante.";
+              }
+            }
+          }
+        } catch (err) {
+          console.error("Error inesperado en subida:", err);
+          uploadWarning =
+            "Error al procesar el comprobante. El gasto se actualizará sin comprobante.";
+        }
+      }
+
+      // Preparar datos para actualizar
+      const updateData: Partial<Gastos> = { ...data };
+      delete updateData.comprobante; // Remover el archivo del objeto de datos
+
+      // Solo agregar comprobante_url si se subió exitosamente
+      if (comprobante_url) {
+        updateData.comprobante_url = comprobante_url;
+      }
+
+      // Agregar fecha de actualización
+      updateData.updated_at = new Date().toISOString();
+
+      const { data: result, error } = await supabase
+        .from("gastos")
+        .update(updateData)
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error updating gasto:", error);
+        return { data: null, error: error.message };
+      }
+
+      // Retornar éxito con warning si hubo problemas con el comprobante
+      return {
+        data: result,
+        error: uploadWarning || null,
+      };
+    } catch (err) {
+      console.error("Error in updateGasto:", err);
+      return { data: null, error: "Error al actualizar gasto" };
+    }
+  }
+
+  // Eliminar gasto
+  async deleteGasto(id: string): Promise<ApiResponse<null>> {
+    try {
+      const { error } = await supabase.from("gastos").delete().eq("id", id);
+
+      if (error) {
+        console.error("Error deleting gasto:", error);
+        return { data: null, error: error.message };
+      }
+
+      return { data: null, error: null };
+    } catch (err) {
+      console.error("Error in deleteGasto:", err);
+      return { data: null, error: "Error al eliminar gasto" };
+    }
+  }
+
+  // Aprobar gasto (cambiar estado a aprobado)
+  async aprobarGasto(id: string): Promise<ApiResponse<GastosType>> {
+    return this.updateGasto(id, { estado: "aprobado" });
+  }
+
+  // Rechazar gasto
+  async rechazarGasto(id: string): Promise<ApiResponse<GastosType>> {
+    return this.updateGasto(id, { estado: "rechazado" });
+  }
+
+  // Marcar como pagado
+  async marcarPagado(id: string): Promise<ApiResponse<GastosType>> {
+    return this.updateGasto(id, { estado: "pagado" });
+  }
+
+  // Obtener estadísticas de gastos
+  async getEstadisticas(
+    fechaDesde?: string,
+    fechaHasta?: string
+  ): Promise<ApiResponse<GastosStatsType>> {
+    try {
+      let query = supabase.from("gastos").select("monto, categoria, estado");
+
+      if (fechaDesde) {
+        query = query.gte("fecha_gasto", fechaDesde);
+      }
+      if (fechaHasta) {
+        query = query.lte("fecha_gasto", fechaHasta);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error("Error fetching estadísticas:", error);
+        return { data: null, error: error.message };
+      }
+
+      // Calcular estadísticas
+      const stats: GastosStatsType = {
+        total_mes: data?.reduce((sum, gasto) => sum + gasto.monto, 0) || 0,
+        total_categoria: {
+          operativos: 0,
+          administrativos: 0,
+          mantenimiento: 0,
+          transporte: 0,
+          suministros: 0,
+          servicios_publicos: 0,
+          marketing: 0,
+          salarios: 0,
+          impuestos: 0,
+          otros: 0,
+        },
+        gastos_pendientes: 0,
+        gastos_aprobados: 0,
+      };
+
+      data?.forEach(gasto => {
+        // Sumar por categoría
+        if (gasto.categoria in stats.total_categoria) {
+          stats.total_categoria[gasto.categoria as CategoriaGasto] += gasto.monto;
+        }
+
+        // Contar por estado
+        if (gasto.estado === "pendiente") stats.gastos_pendientes++;
+        if (gasto.estado === "aprobado") stats.gastos_aprobados++;
+      });
+
+      return { data: stats, error: null };
+    } catch (err) {
+      console.error("Error in getEstadisticas:", err);
+      return { data: null, error: "Error al obtener estadísticas" };
+    }
+  }
+
+  // Obtener gastos por categoría
+  async getGastosPorCategoria(
+    categoria: CategoriaGasto,
+    page: number = 1,
+    limit: number = 10
+  ): Promise<PaginatedResponse<GastosType>> {
+    return this.getGastos(page, limit, { categoria });
+  }
+
+  // Obtener gastos pendientes de aprobación
+  async getGastosPendientes(
+    page: number = 1,
+    limit: number = 10
+  ): Promise<PaginatedResponse<GastosType>> {
+    return this.getGastos(page, limit, { estado: "pendiente" });
+  }
+}
+
+export const gastosService = new GastosService();

@@ -1,6 +1,5 @@
-import { supabase } from "@/integrations/supabase/client";
 import type { Usuario, ApiResponse, PaginatedResponse } from "./types";
-import { loggingService, measureExecutionTime } from "./loggingService";
+import { loggingService, measureExecutionTime } from "../features/logs/services/loggingService";
 
 class UserService {
   // Obtener todos los usuarios (por ahora mock, ya que Supabase Auth no permite listar usuarios desde frontend)

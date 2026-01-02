@@ -10,6 +10,20 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
   },
+  build: {
+    chunkSizeWarningLimit: 1000, // Aumentar límite de advertencia de chunks a 1000 kB
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Separar dependencias grandes en chunks separados
+          vendor: ["react", "react-dom"],
+          ui: ["@radix-ui/react-dialog", "@radix-ui/react-select", "@radix-ui/react-dropdown-menu"],
+          supabase: ["@supabase/supabase-js"],
+          charts: ["recharts"],
+        },
+      },
+    },
+  },
   plugins: [
     react(),
     mode === "development" && componentTagger(),
@@ -17,6 +31,7 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate",
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // Aumentar límite a 5 MiB
       },
       includeAssets: ["favicon.ico", "apple-touch-icon.png", "masked-icon.svg"],
       manifest: {

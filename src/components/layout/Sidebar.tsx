@@ -11,6 +11,7 @@ import {
   User,
   X,
   Database,
+  DollarSign,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
@@ -22,6 +23,7 @@ const menuItems = [
   { icon: Package, label: "Inventario", path: "/inventario" },
   { icon: ShoppingCart, label: "Ventas", path: "/ventas" },
   { icon: CreditCard, label: "Cobranza", path: "/cobranza" },
+  { icon: DollarSign, label: "Gastos", path: "/gastos" },
   { icon: Users, label: "Clientes", path: "/clientes" },
   { icon: Database, label: "Logs", path: "/logs" },
   { icon: Settings, label: "Configuración", path: "/configuracion" },

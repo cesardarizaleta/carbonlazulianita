@@ -21,7 +21,6 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<Usuario | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isSigningIn, setIsSigningIn] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -73,7 +72,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Escuchar cambios de autenticación (solo para eventos futuros)
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, _session) => {
       if (!mounted) return;
 
       if (event === "SIGNED_OUT") {

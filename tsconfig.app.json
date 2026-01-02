@@ -27,5 +27,6 @@
     },
     "resolveJsonModule": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["templates/**/*", "node_modules", "dist"]
 }
