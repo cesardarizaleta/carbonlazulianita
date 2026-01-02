@@ -13,6 +13,7 @@ import {
 import { Trash2 } from "lucide-react";
 import { usePriceFormatter } from "@/hooks/usePriceFormatter";
 import { useDolar } from "@/contexts/DolarContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { ventaService, clienteService, inventarioService } from "@/services";
 import type { Cliente, Producto, VentaItem } from "@/services";
 import { useToast } from "@/hooks/use-toast";
@@ -24,7 +25,8 @@ interface NuevaVentaModalProps {
 
 export function NuevaVentaModal({ open, onOpenChange }: NuevaVentaModalProps) {
   const { formatPriceDual } = usePriceFormatter();
-  const { dolarValue } = useDolar();
+  const { oficialRate: dolarValue } = useDolar();
+  const { user } = useAuth();
   const { toast } = useToast();
 
   const [clientes, setClientes] = useState<Cliente[]>([]);
@@ -70,7 +72,7 @@ export function NuevaVentaModal({ open, onOpenChange }: NuevaVentaModalProps) {
     const qty = parseInt(cantidad);
     if (qty <= 0 || qty > producto.stock) return;
 
-    const precioUnitario = producto.precio_venta;
+    const precioUnitario = producto.precio;
     const precioUnitarioBs = precioUnitario * dolarValue;
     const subtotal = precioUnitario * qty;
     const subtotalBs = precioUnitarioBs * qty;
@@ -99,11 +101,24 @@ export function NuevaVentaModal({ open, onOpenChange }: NuevaVentaModalProps) {
 
     setLoading(true);
     try {
-      await ventaService.create({
+      const totalUSD = ventaItems.reduce((sum, item) => sum + item.subtotal, 0);
+
+      const ventaData = {
         cliente_id: selectedCliente ? parseInt(selectedCliente) : null,
-        items: ventaItems,
-        tasa_cambio_aplicada: dolarValue,
-      });
+        total: totalUSD,
+        fecha_venta: new Date().toISOString(),
+        estado: 'completada',
+        user_id: user?.id || '',
+      };
+
+      const items = ventaItems.map(item => ({
+        producto_id: item.producto_id,
+        cantidad: item.cantidad,
+        precio_unitario: item.precio_unitario,
+        subtotal: item.subtotal,
+      }));
+
+      await ventaService.createVenta(ventaData, items);
 
       toast({
         title: "Venta registrada",
