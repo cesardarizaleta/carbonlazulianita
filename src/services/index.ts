@@ -14,3 +14,5 @@ export { gastosService } from "@/features/gastos/services/gastosService";
 
 // Exportar wrapper genérico
 export { SupabaseWrapper } from "./supabaseWrapper";
+
+export { produccionService } from "@/features/produccion/services/produccionService";

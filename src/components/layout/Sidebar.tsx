@@ -11,7 +11,8 @@ import {
   User,
   X,
   Database,
-  DollarSign,
+  Factory,
+  Package2,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -21,9 +22,10 @@ import logoZulianita from "@/assets/logo-zulianita.jpg";
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
   { icon: Package, label: "Inventario", path: "/inventario" },
+  { icon: Factory, label: "Producción", path: "/produccion" },
   { icon: ShoppingCart, label: "Ventas", path: "/ventas" },
   { icon: CreditCard, label: "Cobranza", path: "/cobranza" },
-  { icon: DollarSign, label: "Gastos", path: "/gastos" },
+  { icon: Package2, label: "Insumos", path: "/insumos" },
   { icon: Users, label: "Clientes", path: "/clientes" },
   { icon: Database, label: "Logs", path: "/logs" },
   { icon: Settings, label: "Configuración", path: "/configuracion" },

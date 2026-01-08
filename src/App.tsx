@@ -13,7 +13,8 @@ import Cobranza from "./features/cobranza/pages/Cobranza";
 import Clientes from "./features/clientes/pages/Clientes";
 import Configuracion from "./features/configuracion/pages/Configuracion";
 import Logs from "./features/logs/pages/Logs";
-import Gastos from "./features/gastos/pages/Gastos";
+import { InsumosPage } from "./features/insumos";
+import Produccion from "./features/produccion/pages/Produccion";
 import Login from "./features/auth/pages/Login";
 import NotFound from "./features/error/pages/NotFound";
 
@@ -116,10 +117,18 @@ const App = () => (
               }
             />
             <Route
-              path="/gastos"
+              path="/insumos"
               element={
                 <AuthGuard>
-                  <Gastos />
+                  <InsumosPage />
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/produccion"
+              element={
+                <AuthGuard>
+                  <Produccion />
                 </AuthGuard>
               }
             />

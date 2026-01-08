@@ -10,3 +10,5 @@ export * from "./inventario";
 export * from "./error";
 
 export * from "./gastos";
+
+export * from "./produccion";

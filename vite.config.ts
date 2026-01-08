@@ -64,12 +64,13 @@ export default defineConfig(({ mode }) => ({
         "masked-icon.svg",
         "pwa-192x192.png",
         "pwa-512x512.png",
-        "logo.jpg"
+        "logo.jpg",
       ],
       manifest: {
         name: "La Zulianita - Sistema de Gestión",
         short_name: "La Zulianita",
-        description: "Sistema de gestión integral para La Zulianita - Inventario, Ventas, Clientes y Cobranza",
+        description:
+          "Sistema de gestión integral para La Zulianita - Inventario, Ventas, Clientes y Cobranza",
         theme_color: "#000000",
         background_color: "#ffffff",
         display: "standalone",

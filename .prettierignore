@@ -8,6 +8,7 @@ build/
 .vite/
 
 # Generated files
+templates/
 *.min.js
 *.min.css
 

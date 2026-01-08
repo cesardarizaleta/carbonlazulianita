@@ -2,11 +2,13 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { NuevaVentaModal } from "./NuevaVentaModal";
 import { NuevoClienteModal } from "./NuevoClienteModal";
+import { NuevaProduccionModal } from "./NuevaProduccionModal";
 
 export function QuickAccess() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isVentaModalOpen, setIsVentaModalOpen] = useState(false);
   const [isClienteModalOpen, setIsClienteModalOpen] = useState(false);
+  const [isProduccionModalOpen, setIsProduccionModalOpen] = useState(false);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -22,6 +24,11 @@ export function QuickAccess() {
     setIsMenuOpen(false);
   };
 
+  const openProduccionModal = () => {
+    setIsProduccionModalOpen(true);
+    setIsMenuOpen(false);
+  };
+
   return (
     <>
       {/* Blur Overlay */}
@@ -34,6 +41,16 @@ export function QuickAccess() {
         {/* Menu */}
         {isMenuOpen && (
           <div className="absolute bottom-20 right-1/2 translate-x-1/2 mb-4 flex flex-col gap-3 animate-in slide-in-from-bottom-2 duration-300">
+            <Button
+              size="icon"
+              className="w-14 h-14 rounded-full shadow-lg bg-orange-600 hover:bg-orange-700 transition-all duration-200 hover:scale-110"
+              onClick={openProduccionModal}
+              title="Registrar Producción"
+            >
+              <span className="material-symbols-rounded" style={{ fontSize: "28px" }}>
+                factory
+              </span>
+            </Button>
             <Button
               size="icon"
               className="w-14 h-14 rounded-full shadow-lg bg-primary hover:bg-primary/90 transition-all duration-200 hover:scale-110"
@@ -75,6 +92,10 @@ export function QuickAccess() {
       {/* Modals */}
       <NuevaVentaModal open={isVentaModalOpen} onOpenChange={setIsVentaModalOpen} />
       <NuevoClienteModal open={isClienteModalOpen} onOpenChange={setIsClienteModalOpen} />
+      <NuevaProduccionModal
+        isOpen={isProduccionModalOpen}
+        onClose={() => setIsProduccionModalOpen(false)}
+      />
     </>
   );
 }
